@@ -34,6 +34,7 @@ SLIK OPPFØRER DU DEG:
 
 PROFILEN DU HAR BYGGET OM DENNE PERSONEN:
 ${JSON.stringify(profile, null, 2)}
+${profile.context ? `\nEKSTRA KONTEKST FRA PERSONEN (dette har de skrevet selv — bruk det aktivt):\n${profile.context}` : ""}
 
 VIKTIG: Etter hvert svar, hvis du har lært noe nytt om personen — et plagg de eier, en preferanse, en beslutning — legg til en linje på slutten i dette formatet (skjult for brukeren, kun til deg):
 [OPPDATERING: ...]
@@ -449,6 +450,88 @@ const css = `
 
   .reset-btn:hover { color: var(--accent); }
 
+  .edit-profile-btn {
+    background: transparent;
+    border: none;
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 2px 0;
+  }
+  .edit-profile-btn:hover { color: var(--accent); }
+
+  .profile-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .pf-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    margin-top: 6px;
+  }
+  .pf-input, .pf-textarea {
+    font-family: 'Libre Baskerville', serif;
+    font-size: 12px;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 8px 10px;
+    width: 100%;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+  }
+  .pf-input:focus, .pf-textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .pf-textarea {
+    resize: vertical;
+    min-height: 60px;
+    line-height: 1.6;
+  }
+  .pf-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .pf-save {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .pf-save:hover { opacity: 0.8; }
+  .pf-cancel {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    background: transparent;
+    color: var(--ink3);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .pf-cancel:hover { color: var(--ink); }
+
   .onboarding {
     min-height: 100vh;
     display: flex;
@@ -578,7 +661,7 @@ export default function App() {
   const [onbInput, setOnbInput] = useState("");
 
   const [profile, setProfile] = useState(stored.profile || {
-    name: "", style: "", brands: "", frustration: "",
+    name: "", style: "", brands: "", frustration: "", context: "",
     wardrobe: [], insights: [], sessionCount: 0,
   });
 
@@ -587,6 +670,8 @@ export default function App() {
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [editForm, setEditForm] = useState({});
 
   const messagesRef = useRef(null);
   const fileRef = useRef(null);
@@ -679,6 +764,7 @@ export default function App() {
         style: updated.style || "",
         brands: updated.brands || "",
         frustration: updated.frustration || "",
+        context: "",
         wardrobe: [],
         insights: [],
         sessionCount: 1,
@@ -706,7 +792,7 @@ export default function App() {
     setOnbStep(0);
     setOnbAnswers({});
     setOnbInput("");
-    setProfile({ name: "", style: "", brands: "", frustration: "", wardrobe: [], insights: [], sessionCount: 0 });
+    setProfile({ name: "", style: "", brands: "", frustration: "", context: "", wardrobe: [], insights: [], sessionCount: 0 });
     setMessages([]);
   };
 
@@ -758,7 +844,7 @@ export default function App() {
   return (
     <>
       <style>{css}</style>
-      <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }}
+      <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }}
         onChange={async e => { if (e.target.files[0]) { setImage(await toB64(e.target.files[0])); } }} />
 
       <div className="layout">
@@ -831,12 +917,33 @@ export default function App() {
           )}
 
           <div className="sidebar-section">
-            <div className="sidebar-title">Om deg</div>
-            {profile.name ? (
+            <div className="sidebar-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              Om deg
+              {!editingProfile && (
+                <button className="edit-profile-btn" onClick={() => { setEditForm({ name: profile.name || "", style: profile.style || "", brands: profile.brands || "", context: profile.context || "" }); setEditingProfile(true); }}>Rediger</button>
+              )}
+            </div>
+            {editingProfile ? (
+              <div className="profile-edit-form">
+                <label className="pf-label">Navn</label>
+                <input className="pf-input" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} placeholder="Fornavn" />
+                <label className="pf-label">Stil</label>
+                <input className="pf-input" value={editForm.style} onChange={e => setEditForm(f => ({ ...f, style: e.target.value }))} placeholder="Beskriv stilen din..." />
+                <label className="pf-label">Merker</label>
+                <input className="pf-input" value={editForm.brands} onChange={e => setEditForm(f => ({ ...f, brands: e.target.value }))} placeholder="Merker du liker..." />
+                <label className="pf-label">Ekstra kontekst</label>
+                <textarea className="pf-textarea" value={editForm.context} onChange={e => setEditForm(f => ({ ...f, context: e.target.value }))} placeholder="Kroppstype, budsjett, livsstil, anledninger, spesielle behov..." rows={4} />
+                <div className="pf-actions">
+                  <button className="pf-save" onClick={() => { const updated = { ...profile, ...editForm }; setProfile(updated); persist(updated, messages); setEditingProfile(false); }}>Lagre</button>
+                  <button className="pf-cancel" onClick={() => setEditingProfile(false)}>Avbryt</button>
+                </div>
+              </div>
+            ) : profile.name ? (
               <div style={{ fontSize: 12, color: "var(--ink2)", lineHeight: 1.8 }}>
                 {profile.name && <div><strong>{profile.name}</strong></div>}
                 {profile.style && <div style={{ fontStyle: "italic", marginTop: 4 }}>{`\u201c${profile.style}\u201d`}</div>}
                 {profile.brands && <div style={{ color: "var(--ink3)", marginTop: 4, fontSize: 11 }}>{profile.brands}</div>}
+                {profile.context && <div style={{ color: "var(--ink2)", marginTop: 8, fontSize: 11, borderTop: "1px solid var(--rule)", paddingTop: 8 }}>{profile.context}</div>}
               </div>
             ) : (
               <div className="profile-empty">Ingenting ennå. Begynn å prate med Garde.</div>
