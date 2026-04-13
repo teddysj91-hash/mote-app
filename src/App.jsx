@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 // ─── API endpoint — uses serverless proxy in production ─────────
 const API = "/api/chat";
@@ -878,6 +879,7 @@ export default function App() {
           </div>
         </div>
       </div>
+      <SpeedInsights />
     </>
   );
 }
