@@ -556,17 +556,17 @@ const css = `
 // ─── Onboarding questions ─────────────────────────────────────────
 const ONB_QUESTIONS = [
   { id: "name", q: "Hva heter du?", placeholder: "Fornavn" },
-  { id: "style", q: "Hvordan vil du beskrive stilen din i dag \u2014 eller stilen du \u00f8nsker \u00e5 ha?", placeholder: "Beskriv med egne ord..." },
+  { id: "style", q: "Hvordan vil du beskrive stilen din i dag — eller stilen du ønsker å ha?", placeholder: "Beskriv med egne ord..." },
   { id: "brands", q: "Er det noen merker eller designere du allerede er glad i?", placeholder: "f.eks. Our Legacy, Loro Piana, ingenting spesielt..." },
-  { id: "frustration", q: "Hva er det st\u00f8rste problemet du har med garderoben din akkurat n\u00e5?", placeholder: "V\u00e6r \u00e6rlig..." },
+  { id: "frustration", q: "Hva er det største problemet du har med garderoben din akkurat nå?", placeholder: "Vær ærlig..." },
 ];
 
 // ─── Starter messages ─────────────────────────────────────────────
 const STARTERS = [
-  "Jeg trenger hjelp til \u00e5 finne ut hva som mangler i garderoben min.",
-  "Jeg vurderer \u00e5 kj\u00f8pe noe \u2014 kan jeg vise deg?",
-  "Hva skulle du ha sagt til meg om kj\u00f8pene jeg har gjort det siste \u00e5ret?",
-  "Jeg skal p\u00e5 middag i helgen. Hva har jeg \u00e5 rutte med?",
+  "Jeg trenger hjelp til å finne ut hva som mangler i garderoben min.",
+  "Jeg vurderer å kjøpe noe — kan jeg vise deg?",
+  "Hva skulle du ha sagt til meg om kjøpene jeg har gjort det siste året?",
+  "Jeg skal på middag i helgen. Hva har jeg å rutte med?",
 ];
 
 export default function App() {
@@ -630,7 +630,7 @@ export default function App() {
       content: m.role === "user"
         ? [
             ...(m.image ? [{ type: "image", source: { type: "base64", media_type: "image/jpeg", data: m.image } }] : []),
-            { type: "text", text: m.text || "Se p\u00e5 dette bildet." },
+            { type: "text", text: m.text || "Se på dette bildet." },
           ]
         : m.text,
     }));
@@ -655,7 +655,7 @@ export default function App() {
       setProfile(updatedProfile);
       persist(updatedProfile, finalMessages);
     } catch {
-      const errMsg = { role: "garde", text: "Kunne ikke koble til. Pr\u00f8v igjen.", ts: Date.now() };
+      const errMsg = { role: "garde", text: "Kunne ikke koble til. Prøv igjen.", ts: Date.now() };
       const finalMessages = [...newMessages, errMsg];
       setMessages(finalMessages);
       persist(profile, finalMessages);
@@ -688,9 +688,9 @@ export default function App() {
       const intro = [
         updated.name ? `${updated.name}.` : "Hei.",
         updated.frustration
-          ? `Du nevnte at problemet er: \u201c${updated.frustration}\u201d. Det er et godt sted \u00e5 starte.`
+          ? `Du nevnte at problemet er: \u201c${updated.frustration}\u201d. Det er et godt sted å starte.`
           : "Fortell meg hva du trenger hjelp med.",
-        "Hva har du p\u00e5 kroppen akkurat n\u00e5?",
+        "Hva har du på kroppen akkurat nå?",
       ].join(" ");
 
       const openMsg = { role: "garde", text: intro, ts: Date.now() };
@@ -723,7 +723,7 @@ export default function App() {
                 <div className="onb-sub">Din personlige stylist</div>
                 <div className="onb-rule" />
                 <p style={{ fontSize: 13, color: "var(--ink2)", lineHeight: 1.8, marginBottom: 32, fontStyle: "italic" }}>
-                  Garde er ikke en app som forteller deg hva du skal ha p\u00e5. Det er en relasjon \u2014 en stylist som l\u00e6rer seg hvem du er over tid, og som husker alt dere snakker om.
+                  Garde er ikke en app som forteller deg hva du skal ha på. Det er en relasjon — en stylist som lærer seg hvem du er over tid, og som husker alt dere snakker om.
                 </p>
               </>
             )}
@@ -774,8 +774,8 @@ export default function App() {
 
           {messages.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-title">Hva tenker du p\u00e5?</div>
-              <div className="empty-sub">Fortell meg om et plagg, en anledning, eller noe du lurer p\u00e5.</div>
+              <div className="empty-title">Hva tenker du på?</div>
+              <div className="empty-sub">Fortell meg om et plagg, en anledning, eller noe du lurer på.</div>
               <div className="starters">
                 {STARTERS.map(s => (
                   <button key={s} className="starter" onClick={() => send(s)}>{s}</button>
@@ -826,7 +826,7 @@ export default function App() {
 
         <div className={`sidebar${sidebarOpen ? " open" : ""}`}>
           {sidebarOpen && (
-            <button className="reset-btn" style={{ alignSelf: "flex-end", marginBottom: 16 }} onClick={() => setSidebarOpen(false)}>\u00d7 Lukk</button>
+            <button className="reset-btn" style={{ alignSelf: "flex-end", marginBottom: 16 }} onClick={() => setSidebarOpen(false)}>× Lukk</button>
           )}
 
           <div className="sidebar-section">
@@ -838,7 +838,7 @@ export default function App() {
                 {profile.brands && <div style={{ color: "var(--ink3)", marginTop: 4, fontSize: 11 }}>{profile.brands}</div>}
               </div>
             ) : (
-              <div className="profile-empty">Ingenting enn\u00e5. Begynn \u00e5 prate med Garde.</div>
+              <div className="profile-empty">Ingenting ennå. Begynn å prate med Garde.</div>
             )}
           </div>
 
@@ -861,7 +861,7 @@ export default function App() {
             {profile.wardrobe?.length > 0 ? (
               profile.wardrobe.map((item, i) => (
                 <div key={i} className="wardrobe-item">
-                  {item.image ? <img src={`data:image/jpeg;base64,${item.image}`} className="wi-thumb" alt="" /> : <div className="wi-ph">\u00b7</div>}
+                  {item.image ? <img src={`data:image/jpeg;base64,${item.image}`} className="wi-thumb" alt="" /> : <div className="wi-ph">·</div>}
                   <div className="wi-info">
                     <div className="wi-name">{item.name}</div>
                     {item.notes && <div className="wi-meta">{item.notes}</div>}
@@ -869,12 +869,12 @@ export default function App() {
                 </div>
               ))
             ) : (
-              <div className="profile-empty">Mention plagg i samtalen \u2014 Garde noterer det.</div>
+              <div className="profile-empty">Nevn plagg i samtalen — Garde noterer det.</div>
             )}
           </div>
 
           <div className="sidebar-section">
-            <button className="reset-btn" onClick={reset}>Nullstill alt og start p\u00e5 nytt</button>
+            <button className="reset-btn" onClick={reset}>Nullstill alt og start på nytt</button>
           </div>
         </div>
       </div>
