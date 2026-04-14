@@ -15,22 +15,41 @@ export default async function handler(req, res) {
   try {
     const { system, messages } = req.body;
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system,
-        messages,
-      }),
-    });
+    // Retry på 529 (overloaded) og 503 med eksponentiell backoff
+    let response;
+    let data;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1500,
+          system,
+          messages,
+          // Aktiver web-søk så Garde kan foreslå ekte produkter med linker
+          tools: [
+            {
+              type: 'web_search_20250305',
+              name: 'web_search',
+              max_uses: 3,
+            },
+          ],
+        }),
+      });
+      data = await response.json();
 
-    const data = await response.json();
+      // Retry kun på overbelastning
+      if ((response.status === 529 || response.status === 503) && attempt < 2) {
+        await new Promise(r => setTimeout(r, 1500 * Math.pow(2, attempt)));
+        continue;
+      }
+      break;
+    }
 
     if (!response.ok) {
       return res.status(response.status).json(data);

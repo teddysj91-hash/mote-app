@@ -52,7 +52,14 @@ SLIK OPPFØRER DU DEG:
 - Du merker mønstre over tid og sier det høyt
 - Du kan si "nei, det tror jeg ikke passer deg" — og forklare hvorfor
 - Du er aldri sycophant. Du sier det som er sant
-- Maks 120 ord per svar. Kortfattet og presist
+- Maks 150 ord per svar. Kortfattet og presist
+
+PRODUKTFORSLAG OG LINKER:
+- Når personen ber om kjøpshjelp, shoppingforslag, eller konkrete produkter — bruk web_search-verktøyet til å finne ekte plagg som er tilgjengelige nå
+- Prioriter gode norske/nordiske/europeiske butikker (Mr Porter, MatchesFashion, Ssense, End., Farfetch, norske butikker) og unngå spekulative linker
+- Gi alltid: merke, modell, pris (hvis synlig), og direkte lenke
+- Hvis du ikke finner noe passende med søk, si det ærlig
+- Du skal ALDRI nekte å gi linker — bruk søket i stedet
 
 PROFILEN DU HAR BYGGET OM DENNE PERSONEN:
 ${JSON.stringify(profile, null, 2)}
@@ -765,7 +772,13 @@ export default function App() {
         throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
       }
 
-      const raw = data.content?.[0]?.text || "Beklager, noe gikk galt.";
+      // Claude kan returnere flere content-blokker når web_search brukes
+      // (tool_use + tool_result + text). Samle all tekst.
+      const raw = (data.content || [])
+        .filter(b => b?.type === "text" && b.text)
+        .map(b => b.text)
+        .join("\n\n")
+        .trim() || "Beklager, noe gikk galt.";
       const { cleanText, updatedProfile } = parseUpdates(raw, profile);
 
       const gardeMsg = { role: "garde", text: cleanText, ts: Date.now() };
@@ -776,10 +789,16 @@ export default function App() {
       persist(updatedProfile, finalMessages);
     } catch (err) {
       const isAbort = err?.name === "AbortError";
-      const detail = isAbort
-        ? " (forespørselen tok for lang tid)"
-        : err?.message ? ` (${err.message})` : "";
-      const errMsg = { role: "garde", text: `Kunne ikke koble til. Prøv igjen.${detail}`, ts: Date.now() };
+      const msg = err?.message || "";
+      let text;
+      if (isAbort) {
+        text = "Forespørselen tok for lang tid. Prøv igjen om et øyeblikk.";
+      } else if (/overloaded|529|503/i.test(msg)) {
+        text = "Serverne er litt travle akkurat nå. Prøv igjen om et halvt minutt.";
+      } else {
+        text = `Kunne ikke koble til. Prøv igjen.${msg ? ` (${msg})` : ""}`;
+      }
+      const errMsg = { role: "garde", text, ts: Date.now() };
       const finalMessages = [...newMessages, errMsg];
       setMessages(finalMessages);
       persist(profile, finalMessages);
