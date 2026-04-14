@@ -12,11 +12,33 @@ const load = () => {
 };
 const save = (data) => localStorage.setItem(STORE, JSON.stringify(data));
 
-const toB64 = (file) => new Promise((res, rej) => {
-  const r = new FileReader();
-  r.onload = () => res(r.result.split(",")[1]);
-  r.onerror = rej;
-  r.readAsDataURL(file);
+// Komprimer og konverter bilde til base64. Max dim 1600px, JPEG q=0.82.
+// Reduserer store mobilbilder (4-8MB) til typisk 200-600KB så vi ikke
+// treffer Vercels ~4.5MB body-limit på serverless.
+const toB64 = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 1600;
+      let { width, height } = img;
+      if (width > MAX || height > MAX) {
+        if (width >= height) { height = Math.round(height * (MAX / width)); width = MAX; }
+        else { width = Math.round(width * (MAX / height)); height = MAX; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+      resolve(dataUrl.split(",")[1]);
+    };
+    img.onerror = reject;
+    img.src = reader.result;
+  };
+  reader.onerror = reject;
+  reader.readAsDataURL(file);
 });
 
 // ─── System prompt ────────────────────────────────────────────────
@@ -675,6 +697,7 @@ export default function App() {
 
   const messagesRef = useRef(null);
   const fileRef = useRef(null);
+  const cameraRef = useRef(null);
   const textareaRef = useRef(null);
 
   useEffect(() => {
@@ -730,7 +753,13 @@ export default function App() {
           messages: apiMessages,
         }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const msg = data?.error?.message || data?.error || `Feil ${res.status}`;
+        throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
+      }
+
       const raw = data.content?.[0]?.text || "Beklager, noe gikk galt.";
       const { cleanText, updatedProfile } = parseUpdates(raw, profile);
 
@@ -740,8 +769,9 @@ export default function App() {
       setMessages(finalMessages);
       setProfile(updatedProfile);
       persist(updatedProfile, finalMessages);
-    } catch {
-      const errMsg = { role: "garde", text: "Kunne ikke koble til. Prøv igjen.", ts: Date.now() };
+    } catch (err) {
+      const detail = err?.message ? ` (${err.message})` : "";
+      const errMsg = { role: "garde", text: `Kunne ikke koble til. Prøv igjen.${detail}`, ts: Date.now() };
       const finalMessages = [...newMessages, errMsg];
       setMessages(finalMessages);
       persist(profile, finalMessages);
@@ -846,6 +876,8 @@ export default function App() {
       <style>{css}</style>
       <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }}
         onChange={async e => { if (e.target.files[0]) { setImage(await toB64(e.target.files[0])); } }} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }}
+        onChange={async e => { if (e.target.files[0]) { setImage(await toB64(e.target.files[0])); } }} />
 
       <div className="layout">
         <div className="main">
@@ -897,7 +929,8 @@ export default function App() {
               </div>
             )}
             <div className="input-row">
-              <button className="btn-cam" onClick={() => { fileRef.current.value = ""; fileRef.current.click(); }}>📷</button>
+              <button className="btn-cam" title="Ta bilde" onClick={() => { cameraRef.current.value = ""; cameraRef.current.click(); }}>📷</button>
+              <button className="btn-cam" title="Velg fra galleri" onClick={() => { fileRef.current.value = ""; fileRef.current.click(); }}>🖼️</button>
               <textarea
                 ref={textareaRef}
                 placeholder="Skriv til Garde..."

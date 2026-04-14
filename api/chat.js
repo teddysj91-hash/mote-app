@@ -38,6 +38,15 @@ export default async function handler(req, res) {
 
     return res.status(200).json(data);
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to reach Claude API' });
+    return res.status(500).json({ error: { message: `Proxy-feil: ${error?.message || 'ukjent'}` } });
   }
 }
+
+// Øk body-parser-limit slik at base64-bilder går gjennom
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+};
