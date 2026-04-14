@@ -744,6 +744,10 @@ export default function App() {
         : m.text,
     }));
 
+    // Client-side timeout — aldri heng for alltid
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 75000);
+
     try {
       const res = await fetch(API, {
         method: "POST",
@@ -752,6 +756,7 @@ export default function App() {
           system: buildSystem(profile),
           messages: apiMessages,
         }),
+        signal: controller.signal,
       });
       const data = await res.json().catch(() => ({}));
 
@@ -770,13 +775,18 @@ export default function App() {
       setProfile(updatedProfile);
       persist(updatedProfile, finalMessages);
     } catch (err) {
-      const detail = err?.message ? ` (${err.message})` : "";
+      const isAbort = err?.name === "AbortError";
+      const detail = isAbort
+        ? " (forespørselen tok for lang tid)"
+        : err?.message ? ` (${err.message})` : "";
       const errMsg = { role: "garde", text: `Kunne ikke koble til. Prøv igjen.${detail}`, ts: Date.now() };
       const finalMessages = [...newMessages, errMsg];
       setMessages(finalMessages);
       persist(profile, finalMessages);
+    } finally {
+      clearTimeout(timeoutId);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // ─── Onboarding ───────────────────────────────────────────────
