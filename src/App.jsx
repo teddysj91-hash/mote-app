@@ -1052,4 +1052,26 @@ export default function App() {
           <div className="sidebar-section">
             <div className="sidebar-title">Garderoben</div>
             {profile.wardrobe?.length > 0 ? (
-  
+              profile.wardrobe.map((item, i) => (
+                <div key={i} className="wardrobe-item">
+                  {item.image ? <img src={`data:image/jpeg;base64,${item.image}`} className="wi-thumb" alt="" /> : <div className="wi-ph">·</div>}
+                  <div className="wi-info">
+                    <div className="wi-name">{item.name}</div>
+                    {item.notes && <div className="wi-meta">{item.notes}</div>}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="profile-empty">Nevn plagg i samtalen — Garde noterer det.</div>
+            )}
+          </div>
+
+          <div className="sidebar-section">
+            <button className="reset-btn" onClick={reset}>Nullstill alt og start på nytt</button>
+          </div>
+        </div>
+      </div>
+      <SpeedInsights />
+    </>
+  );
+}
