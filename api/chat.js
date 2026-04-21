@@ -31,7 +31,7 @@ export default async function handler(req, res) {
           max_tokens: 1500,
           system,
           messages,
-          // Aktiver web-søk så Garde kan foreslå ekte produkter med linker
+          // Aktiver web-søk så Tenue kan foreslå ekte produkter med linker
           tools: [
             {
               type: 'web_search_20250305',

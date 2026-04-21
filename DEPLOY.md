@@ -1,4 +1,4 @@
-# Garde — Slik deployer du
+# Tenue — Slik deployer du
 
 ## Hva du trenger
 - En GitHub-konto (gratis)
@@ -6,28 +6,28 @@
 - En Anthropic API-nøkkel (fra console.anthropic.com)
 
 ## Steg 1: Last opp til GitHub
-1. Gå til github.com og lag et nytt repository ("garde-app", privat er fint)
-2. Åpne Terminal i **garde-app**-mappen og kjør:
+1. Gå til github.com og lag et nytt repository ("tenue-app", privat er fint)
+2. Åpne Terminal i **tenue-app**-mappen og kjør:
 
 ```
 git init
 git add .
 git commit -m "Initial commit"
 git branch -M main
-git remote add origin https://github.com/DITT-BRUKERNAVN/garde-app.git
+git remote add origin https://github.com/DITT-BRUKERNAVN/tenue-app.git
 git push -u origin main
 ```
 
 ## Steg 2: Deploy til Vercel
 1. Gå til vercel.com → "Add New Project"
-2. Importer GitHub-repoet "garde-app"
+2. Importer GitHub-repoet "tenue-app"
 3. Vercel oppdager automatisk at det er Vite — bare trykk "Deploy"
 4. **Viktig:** Gå til prosjektets "Settings" → "Environment Variables"
 5. Legg til: `ANTHROPIC_API_KEY` = din nøkkel fra console.anthropic.com
 6. Trykk "Redeploy" (under Deployments-fanen)
 
 ## Ferdig!
-Du får en URL som `garde-app.vercel.app` — send denne til hvem du vil.
+Du får en URL som `tenue-app.vercel.app` — send denne til hvem du vil.
 Appen fungerer på mobil og desktop. API-nøkkelen din er trygt skjult.
 
 ## Kostnad
