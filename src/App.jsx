@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const GARMENT_CATEGORIES = [
@@ -839,7 +840,8 @@ function buildSystem(profile, wardrobe) {
   const wardrobeSummary = lines.length ? lines.join("\n") : "Ingen plagg registrert";
   const profileLine = [profile.name, refs, colors, notes].filter(Boolean).join(" | ");
 
-  return "Du er en europeisk moteekspert med streng, intellektuell estetikk.\nBruker: " + profileLine + "\nGarderobe:\n" + wardrobeSummary + "\nGi konkrete, direkte råd på norsk. Ingen tomme komplimenter.";
+  const base = "Du er en moteekspert som er spesialisert på balanserte silhuetter og gode fargekombinasjoner. Du er streng men rettferdig, og oppmuntrer til en moderne europeisk estetikk — strukturert, god kvalitet over mengde og alltid litt noe som løfter outfiten uten at det blir prangende. Du er glad i gjenbruk og henviser til Vestiaire og lignende apper, eller europeiske merker med fokus på god kvalitet.";
+  return base + "\n\nBruker: " + profileLine + "\nGarderobe:\n" + wardrobeSummary + "\nGi konkrete, direkte råd på norsk. Ingen tomme komplimenter.";
 }
 
 
@@ -1012,7 +1014,10 @@ function ChatStep({ profile, wardrobe, onEditProfile, onEditWardrobe, onReset })
 
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
         body: JSON.stringify(payload),
       });
 
@@ -1274,12 +1279,15 @@ function OutfitRating({ profile, wardrobe, onBack }) {
     const refs = [...(profile.references || []), profile.customRef].filter(Boolean).join(", ") || "ikke spesifisert";
     const colors = (profile.colors || []).join(", ") || "ikke spesifisert";
 
-    const systemPrompt = "Du er en streng europeisk moteekspert. Brukeren heter " + profile.name + ". Stilreferanser: " + refs + ". Fargepalett: " + colors + ". Garderobe:\n" + wardrobeSummary + "\n\nVurder antrekket i bildet. Svar KUN med gyldig JSON i dette formatet og ingenting annet:\n{\"karakter\": [tall 1-10],\"styrker\": [liste med 2-3 korte punkter],\"svakheter\": [liste med 1-2 korte punkter],\"forslag\": [liste med 1-2 konkrete forbedringsforslag]}";
+    const systemPrompt = "Du er en moteekspert som er spesialisert på balanserte silhuetter og gode fargekombinasjoner. Du er streng men rettferdig, og oppmuntrer til en moderne europeisk estetikk — strukturert, god kvalitet over mengde. Du er glad i gjenbruk og henviser til Vestiaire og europeiske kvalitetsmerker. Brukeren heter " + profile.name + ". Stilreferanser: " + refs + ". Fargepalett: " + colors + ". Garderobe:\n" + wardrobeSummary + "\n\nVurder antrekket i bildet. Svar KUN med gyldig JSON og ingenting annet:\n{\"karakter\": [tall 1-10],\"styrker\": [liste med 2-3 korte punkter],\"svakheter\": [liste med 1-2 korte punkter],\"forslag\": [liste med 1-2 konkrete forbedringsforslag]}";
 
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
           max_tokens: 600,
@@ -1509,7 +1517,7 @@ function Wishlist({ onBack }) {
   );
 }
 
-// ─── Home Screen ──────────────────────────────────────────────────────────────
+
 
 function NavRow({ label, onClick, locked }) {
   return (
@@ -1557,9 +1565,11 @@ function HomeScreen({ profile, wardrobe, onGoProfile, onGoWardrobe, onGoChat, on
             <p style={{ fontSize: "0.85rem", color: "#9c9590", marginTop: "3px" }}>{profile.name}</p>
           )}
         </div>
-        {hasProfile && (
-          <button onClick={onReset} style={{ background: "transparent", border: "none", cursor: "pointer", fontFamily: "'DM Mono', monospace", fontSize: "0.5rem", letterSpacing: "0.12em", color: "#9c9590", textTransform: "uppercase" }}>Nullstill</button>
-        )}
+        <div style={{ display: "flex", gap: "1rem" }}>
+          {hasProfile && (
+            <button onClick={onReset} style={{ background: "transparent", border: "none", cursor: "pointer", fontFamily: "'DM Mono', monospace", fontSize: "0.5rem", letterSpacing: "0.1em", color: "#9c9590" }}>nullstill</button>
+          )}
+        </div>
       </div>
 
       {/* Nav — slightly above centre */}
@@ -1612,76 +1622,7 @@ export default function App() {
         );
         setWardrobe(Object.fromEntries(entries));
       } else {
-        const mk = (name, color, brand, material = "") => ({
-          id: `seed-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          name, color, brand, material,
-          preview: null, base64: null, mediaType: null,
-        });
-        const seeded = {
-          yttertoy: [
-            mk("Trench", "Beige", "FWSS"),
-            mk("Peacoat", "Grå", "Arket", "Ull"),
-            mk("Rutete blazer", "", "UFF"),
-            mk("Trench", "Denim", "COS"),
-            mk("Kort jakke", "Grønn", "", "Ull"),
-          ],
-          jakker: [],
-          gensere: [
-            mk("Turtleneck", "Sort", "GAP"),
-            mk("Wrap cardigan", "Grå", "Dries van Noten"),
-            mk("Cardigan", "Grønn", "Extreme Cashmere", "Kasjmir"),
-            mk("Cardigan", "Grå", "FWSS"),
-            mk("Crewneck", "Grå", "Uniqlo"),
-            mk("Cardigan", "Navy", "Gerts"),
-          ],
-          topper: [
-            mk("T-skjorte", "Hvit", "Levete"),
-            mk("Singlet", "Grå", "Vintage"),
-            mk("Long sleeve", "Svart", "H&M"),
-            mk("Long sleeve", "Blå", "H&M"),
-          ],
-          skjorter: [
-            mk("Skjorte", "Hvit", "Skall Studio"),
-            mk("Skjorte", "Sort", "Skall Studio"),
-            mk("Slim skjorte", "Hvit", "Hugo Boss"),
-            mk("Oversized skjorte", "Hvit", "Maison Margiela"),
-            mk("Silkebluse", "Kremhvit", "FWSS", "Silke"),
-            mk("Silkeskjorte", "Grå", "Vintage", "Silke"),
-            mk("Prikkete skjorte", "Svart", "Vintage"),
-            mk("Blomstret bluse", "Blå", ""),
-          ],
-          bukser: [
-            mk("Ullbukser", "Grå", "COS", "Ull"),
-            mk("Jeans 505", "Blå", "Levis", "Denim"),
-            mk("Jeans", "Navy", "Zara", "Denim"),
-            mk("Wide jeans", "Hvit", "Zara", "Denim"),
-          ],
-          skjort: [
-            mk("Ullskjørt", "Mørkegrå", "Vintage", "Ull"),
-            mk("Skjørt", "Navy", "Vintage"),
-            mk("Langt skjørt", "Svart", "FWSS"),
-          ],
-          kjoler: [
-            mk("Bomullskjole", "Hvit", "Inwear", "Bomull"),
-          ],
-          sko: [
-            mk("Loafers", "Svart", "Morjas", "Lær"),
-            mk("Ballerinas", "Svart", "Morjas", "Lær"),
-            mk("Luella", "Navy", "Paloma Wool"),
-            mk("Fernanda", "Rød", "Paloma Wool"),
-            mk("Pensko med hæl", "Svart", "Lille Vinkel", "Lær"),
-          ],
-          vesker: [
-            mk("Morgan", "Brun", "Paloma Wool", "Lær"),
-            mk("Croco bag", "Grønn", "Our Legacy"),
-            mk("Tote", "Navy", "Margiela"),
-          ],
-        };
-        for (const cat of GARMENT_CATEGORIES) {
-          await saveCategory(cat.id, seeded[cat.id] || []);
-        }
-        await save(SK.wardrobe, { saved: true });
-        setWardrobe(seeded);
+        setWardrobe(Object.fromEntries(GARMENT_CATEGORIES.map(c => [c.id, []])));
       }
       if (p) setProfile(p);
       setView("home");
