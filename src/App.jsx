@@ -1247,20 +1247,45 @@ function ChatStep({ profile, wardrobe, onEditProfile, onEditWardrobe, onReset })
 
 
 // ─── Outfit Rating ────────────────────────────────────────────────────────────
-
 function OutfitRating({ profile, wardrobe, onBack }) {
   const [image, setImage]       = useState(null);
   const [base64, setBase64]     = useState(null);
   const [loading, setLoading]   = useState(false);
   const [result, setResult]     = useState(null);
   const [error, setError]       = useState(null);
-  const fileRef = useRef();
+  const [history, setHistory]   = useState([]);
+  const [viewing, setViewing]   = useState(null); // historikk-entry som vises i full-view
+  const cameraRef = useRef();
+  const galleryRef = useRef();
+
+  // Last historikk ved mount
+  useEffect(() => {
+    (async () => {
+      const saved = await load("tenue-outfit-history");
+      if (Array.isArray(saved)) setHistory(saved);
+    })();
+  }, []);
 
   async function handleFile(file) {
-    const { dataURL, base64: b64, mediaType } = await compressImage(file);
+    // Høyere oppløsning for outfit-bilder enn for garderoben (brukeren ser bildet igjen + Claude analyserer det)
+    const { dataURL, base64: b64, mediaType } = await compressImage(file, 1280, 0.88);
     setImage({ dataURL, base64: b64, mediaType });
     setResult(null);
     setError(null);
+  }
+
+  // Lagre vurdering til historikk etter vellykket analyse
+  async function saveToHistory(entry) {
+    const next = [entry, ...history].slice(0, 30); // behold siste 30
+    setHistory(next);
+    await save("tenue-outfit-history", next);
+  }
+
+  async function deleteHistoryEntry(id) {
+    const next = history.filter(h => h.id !== id);
+    setHistory(next);
+    await save("tenue-outfit-history", next);
+    if (viewing?.id === id) setViewing(null);
   }
 
   async function analyse() {
@@ -1307,6 +1332,17 @@ function OutfitRating({ profile, wardrobe, onBack }) {
       const clean = txt.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       setResult(parsed);
+      // Lagre til historikk — gir kompasset revealed-preference-data over tid
+      saveToHistory({
+        id: `outfit-${Date.now()}`,
+        date: new Date().toISOString(),
+        base64: image.base64,
+        mediaType: image.mediaType,
+        karakter: parsed.karakter,
+        styrker: parsed.styrker || [],
+        svakheter: parsed.svakheter || [],
+        forslag: parsed.forslag || [],
+      });
     } catch (err) {
       setError("Noe gikk galt: " + err.message);
     }
@@ -1331,23 +1367,41 @@ function OutfitRating({ profile, wardrobe, onBack }) {
         {/* Upload area */}
         {!image ? (
           <div
-            onClick={() => fileRef.current.click()}
             style={{
               border: "1px dashed #d4cfc8", background: "#fafafa",
               aspectRatio: "3/4", maxHeight: "420px",
               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-              cursor: "pointer", transition: "background 0.15s", gap: "0.75rem",
+              gap: "1.25rem", padding: "1.5rem",
             }}
-            onMouseEnter={e => e.currentTarget.style.background = "#f4f4f6"}
-            onMouseLeave={e => e.currentTarget.style.background = "#fafafa"}
           >
             <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#9c9590" strokeWidth="1.2" strokeLinecap="round">
               <rect x="4" y="6" width="24" height="20" rx="1"/>
               <circle cx="16" cy="16" r="5"/>
               <circle cx="24" cy="10" r="1.5" fill="#9c9590" stroke="none"/>
             </svg>
-            <Mono style={{ color: "#9c9590" }}>Last opp bilde</Mono>
-            <input ref={fileRef} type="file" accept="image/*" hidden onChange={e => e.target.files[0] && handleFile(e.target.files[0])} />
+            <Mono style={{ color: "#9c9590", textAlign: "center" }}>Legg til antrekk</Mono>
+            <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", justifyContent: "center" }}>
+              <button
+                onClick={() => cameraRef.current.click()}
+                style={{
+                  border: "none", background: "#1a1814", color: "#f4f4f6",
+                  fontFamily: "'DM Mono', monospace", fontSize: "0.6rem",
+                  letterSpacing: "0.18em", textTransform: "uppercase",
+                  padding: "0.75rem 1.25rem", cursor: "pointer",
+                }}
+              >Ta bilde</button>
+              <button
+                onClick={() => galleryRef.current.click()}
+                style={{
+                  border: "1px solid #1a1814", background: "transparent", color: "#1a1814",
+                  fontFamily: "'DM Mono', monospace", fontSize: "0.6rem",
+                  letterSpacing: "0.18em", textTransform: "uppercase",
+                  padding: "0.75rem 1.25rem", cursor: "pointer",
+                }}
+              >Fra galleri</button>
+            </div>
+            <input ref={cameraRef}  type="file" accept="image/*" capture="environment" hidden onChange={e => e.target.files[0] && handleFile(e.target.files[0])} />
+            <input ref={galleryRef} type="file" accept="image/*" hidden onChange={e => e.target.files[0] && handleFile(e.target.files[0])} />
           </div>
         ) : (
           <div style={{ position: "relative", marginBottom: "1.25rem" }}>
@@ -1424,7 +1478,105 @@ function OutfitRating({ profile, wardrobe, onBack }) {
             }}>Nytt antrekk</button>
           </div>
         )}
+
+        {/* Historikk-strip */}
+        {history.length > 0 && !viewing && (
+          <div style={{ marginTop: "3rem", borderTop: "1px solid #d4cfc8", paddingTop: "1.5rem" }}>
+            <Mono style={{ color: "#9c9590", display: "block", marginBottom: "1rem" }}>Tidligere antrekk</Mono>
+            <div style={{ display: "flex", gap: "0.6rem", overflowX: "auto", paddingBottom: "0.5rem" }}>
+              {history.map(h => (
+                <div
+                  key={h.id}
+                  onClick={() => setViewing(h)}
+                  style={{
+                    flex: "0 0 auto", width: "90px", cursor: "pointer",
+                    position: "relative",
+                  }}
+                >
+                  <img
+                    src={b64url(h.base64, h.mediaType || "image/jpeg")}
+                    alt="Tidligere antrekk"
+                    style={{ width: "90px", height: "120px", objectFit: "cover", display: "block", background: "#e8e8eb" }}
+                  />
+                  <div style={{
+                    position: "absolute", bottom: "4px", right: "4px",
+                    background: "rgba(26,24,20,0.85)", color: "#f4f4f6",
+                    fontFamily: "'DM Mono', monospace", fontSize: "0.6rem",
+                    padding: "2px 6px", letterSpacing: "0.04em",
+                  }}>{h.karakter}/10</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Full-view av historikk-entry */}
+      {viewing && (
+        <div
+          onClick={() => setViewing(null)}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(26,24,20,0.92)",
+            zIndex: 50, overflowY: "auto", padding: "2rem 1.5rem",
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxWidth: "520px", margin: "0 auto", background: "#f4f4f6", padding: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+              <Mono style={{ color: "#9c9590" }}>
+                {new Date(viewing.date).toLocaleDateString("nb-NO", { day: "numeric", month: "short", year: "numeric" })}
+              </Mono>
+              <button onClick={() => setViewing(null)} style={{
+                background: "transparent", border: "none", cursor: "pointer",
+                fontFamily: "'DM Mono', monospace", fontSize: "1rem", color: "#1a1814",
+              }}>×</button>
+            </div>
+            <img
+              src={b64url(viewing.base64, viewing.mediaType || "image/jpeg")}
+              alt="Antrekk"
+              style={{ width: "100%", maxHeight: "480px", objectFit: "contain", display: "block", background: "#e8e8eb", marginBottom: "1.25rem" }}
+            />
+            <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "1.5rem", borderBottom: "1px solid #d4cfc8", paddingBottom: "1rem" }}>
+              <span style={{ fontSize: "3rem", fontWeight: "300", color: viewing.karakter >= 8 ? "#4a5c3f" : viewing.karakter >= 6 ? "#7a2535" : "#8a3030", lineHeight: 1 }}>{viewing.karakter}</span>
+              <span style={{ fontSize: "1.2rem", color: "#9c9590", fontWeight: "300" }}>/10</span>
+            </div>
+            {viewing.styrker?.length > 0 && (
+              <div style={{ marginBottom: "1.25rem" }}>
+                <Mono style={{ color: "#4a5c3f", display: "block", marginBottom: "0.5rem" }}>Styrker</Mono>
+                {viewing.styrker.map((s, i) => (
+                  <p key={i} style={{ fontSize: "0.95rem", color: "#1a1814", lineHeight: "1.5", marginBottom: "0.3rem", paddingLeft: "0.75rem", borderLeft: "1.5px solid #4a5c3f" }}>{s}</p>
+                ))}
+              </div>
+            )}
+            {viewing.svakheter?.length > 0 && (
+              <div style={{ marginBottom: "1.25rem" }}>
+                <Mono style={{ color: "#8a3030", display: "block", marginBottom: "0.5rem" }}>Svakheter</Mono>
+                {viewing.svakheter.map((s, i) => (
+                  <p key={i} style={{ fontSize: "0.95rem", color: "#1a1814", lineHeight: "1.5", marginBottom: "0.3rem", paddingLeft: "0.75rem", borderLeft: "1.5px solid #8a3030" }}>{s}</p>
+                ))}
+              </div>
+            )}
+            {viewing.forslag?.length > 0 && (
+              <div style={{ marginBottom: "1.25rem" }}>
+                <Mono style={{ color: "#7a2535", display: "block", marginBottom: "0.5rem" }}>Forslag</Mono>
+                {viewing.forslag.map((s, i) => (
+                  <p key={i} style={{ fontSize: "0.95rem", color: "#1a1814", lineHeight: "1.5", marginBottom: "0.3rem", paddingLeft: "0.75rem", borderLeft: "1.5px solid #8c7c6c" }}>{s}</p>
+                ))}
+              </div>
+            )}
+            <button onClick={() => deleteHistoryEntry(viewing.id)} style={{
+              background: "transparent", border: "1px solid #c4a0a0", color: "#8a3030",
+              fontFamily: "'DM Mono', monospace", fontSize: "0.55rem",
+              letterSpacing: "0.14em", textTransform: "uppercase",
+              padding: "0.6rem 1.2rem", cursor: "pointer", marginTop: "0.5rem",
+            }}>Slett fra historikk</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
