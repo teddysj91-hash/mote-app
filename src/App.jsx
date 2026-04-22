@@ -92,7 +92,8 @@ const css = `
   ::-webkit-scrollbar { width: 2px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #b8a898; }
-  body { background: #f4f4f6; }
+  body { background: #f4f4f6; text-transform: lowercase; }
+  input, textarea, [data-preserve-case], [data-preserve-case] * { text-transform: none !important; }
   textarea, input { font-family: 'Fraunces', Georgia, serif; }
   textarea:focus, input:focus { outline: none; }
   textarea { resize: none; }
@@ -225,7 +226,7 @@ function Btn({ children, onClick, variant = "primary", disabled = false, small =
     fontFamily: "'DM Mono', monospace",
     fontSize: small ? "0.55rem" : "0.6rem",
     letterSpacing: "0.18em",
-    textTransform: "uppercase",
+    textTransform: "lowercase",
     cursor: disabled ? "default" : "pointer",
     padding: small ? "0.5rem 1rem" : "0.85rem 2rem",
     transition: "background 0.2s, color 0.2s, opacity 0.2s",
@@ -255,7 +256,7 @@ function BackBtn({ onClick, label = "Back" }) {
     <button onClick={onClick} style={{
       background: "transparent", border: "none", cursor: "pointer",
       fontFamily: "'DM Mono', monospace", fontSize: "0.6rem",
-      letterSpacing: "0.12em", color: "#9c9590", textTransform: "uppercase",
+      letterSpacing: "0.12em", color: "#9c9590", textTransform: "lowercase",
       display: "flex", alignItems: "center", gap: "0.4rem",
     }}>← {label}</button>
   );
@@ -369,7 +370,7 @@ function StylePicker({ selRefs, onToggle, customRef, onCustomRef }) {
                 borderBottom: activeGroup === g.label ? "1.5px solid #1a1814" : "1.5px solid transparent",
                 padding: "0.6rem 0.85rem", cursor: "pointer", whiteSpace: "nowrap",
                 fontFamily: "'DM Mono', monospace", fontSize: "0.5rem",
-                letterSpacing: "0.12em", textTransform: "uppercase",
+                letterSpacing: "0.12em", textTransform: "lowercase",
                 color: activeGroup === g.label ? "#1a1814" : "#9c9590",
                 transition: "all 0.15s",
               }}>{g.label}</button>
@@ -475,7 +476,7 @@ function ColorPicker({ selColors, onToggle }) {
                 borderBottom: activeGroup === g.label ? "1.5px solid #1a1814" : "1.5px solid transparent",
                 padding: "0.6rem 0.75rem", cursor: "pointer", whiteSpace: "nowrap",
                 fontFamily: "'DM Mono', monospace", fontSize: "0.5rem",
-                letterSpacing: "0.12em", textTransform: "uppercase",
+                letterSpacing: "0.12em", textTransform: "lowercase",
                 color: activeGroup === g.label ? "#1a1814" : "#9c9590",
                 transition: "all 0.15s", flexShrink: 0,
               }}>{g.label}</button>
@@ -599,11 +600,11 @@ function GarmentRow({ item, idx, onRemove, onUpdate, onAttachImage }) {
           }
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "1rem", fontWeight: "400", color: item.name ? "#1a1814" : "#9c9590", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {item.name || "Unnamed item"}
+          <p {...(item.name ? { "data-preserve-case": "true" } : {})} style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "1rem", fontWeight: "400", color: item.name ? "#1a1814" : "#9c9590", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {item.name || "unnamed item"}
           </p>
           {(item.color || item.brand || item.material) && (
-            <Mono style={{ color: "#9c9590", fontSize: "0.5rem" }}>{[item.color, item.brand, item.material].filter(Boolean).join(" · ")}</Mono>
+            <Mono style={{ color: "#9c9590", fontSize: "0.5rem" }}><span data-preserve-case="true">{[item.color, item.brand, item.material].filter(Boolean).join(" · ")}</span></Mono>
           )}
         </div>
         <Mono style={{ color: "#9c9590", fontSize: "0.5rem", flexShrink: 0 }}>{expanded ? "▲" : "▼"}</Mono>
@@ -627,16 +628,16 @@ function GarmentRow({ item, idx, onRemove, onUpdate, onAttachImage }) {
             onClick={e => e.stopPropagation()}
             style={{ border: "none", borderBottom: "1px solid #d4cfc8", background: "transparent", padding: "0.4rem 0", fontSize: "0.9rem", color: "#1a1814", fontFamily: "'Fraunces', Georgia, serif", width: "100%" }} />
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginTop: "0.25rem" }}>
-            <label style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.52rem", letterSpacing: "0.12em", textTransform: "uppercase", color: hasImage ? "#7a2535" : "#9c9590", cursor: "pointer", borderBottom: "1px solid #d4cfc8", paddingBottom: "1px" }}>
+            <label style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.52rem", letterSpacing: "0.12em", textTransform: "lowercase", color: hasImage ? "#7a2535" : "#9c9590", cursor: "pointer", borderBottom: "1px solid #d4cfc8", paddingBottom: "1px" }}>
               {hasImage ? "Change image" : "Upload image"}
               <input ref={imgRef} type="file" accept="image/*" hidden onChange={e => { if (e.target.files[0]) onAttachImage(e.target.files[0]); }} />
             </label>
             {hasImage && (
               <button onClick={e => { e.stopPropagation(); onUpdate("preview", null); onUpdate("base64", null); onUpdate("mediaType", null); }}
-                style={{ background: "transparent", border: "none", cursor: "pointer", fontFamily: "'DM Mono', monospace", fontSize: "0.5rem", letterSpacing: "0.1em", color: "#9c9590", textTransform: "uppercase" }}>Remove image</button>
+                style={{ background: "transparent", border: "none", cursor: "pointer", fontFamily: "'DM Mono', monospace", fontSize: "0.5rem", letterSpacing: "0.1em", color: "#9c9590", textTransform: "lowercase" }}>Remove image</button>
             )}
             <button onClick={e => { e.stopPropagation(); onRemove(); }}
-              style={{ background: "transparent", border: "none", cursor: "pointer", fontFamily: "'DM Mono', monospace", fontSize: "0.5rem", letterSpacing: "0.1em", color: "#b08080", textTransform: "uppercase", marginLeft: "auto" }}>Delete</button>
+              style={{ background: "transparent", border: "none", cursor: "pointer", fontFamily: "'DM Mono', monospace", fontSize: "0.5rem", letterSpacing: "0.1em", color: "#b08080", textTransform: "lowercase", marginLeft: "auto" }}>Delete</button>
           </div>
         </div>
       )}
@@ -759,7 +760,7 @@ function WardrobeStep({ profile, onComplete, onBack, existing }) {
               border: "1px solid #d4cfc8", background: "transparent",
               padding: "0.65rem 1.25rem", cursor: "pointer",
               fontFamily: "'DM Mono', monospace", fontSize: "0.58rem",
-              letterSpacing: "0.14em", textTransform: "uppercase", color: "#6b6560",
+              letterSpacing: "0.14em", textTransform: "lowercase", color: "#6b6560",
               transition: "all 0.15s",
             }}
               onMouseEnter={e => { e.currentTarget.style.background = "#fafafa"; e.currentTarget.style.color = "#1a1814"; }}
@@ -770,7 +771,7 @@ function WardrobeStep({ profile, onComplete, onBack, existing }) {
               border: "1px solid #d4cfc8", background: "transparent",
               padding: "0.65rem 1.25rem", cursor: "pointer",
               fontFamily: "'DM Mono', monospace", fontSize: "0.58rem",
-              letterSpacing: "0.14em", textTransform: "uppercase", color: "#6b6560",
+              letterSpacing: "0.14em", textTransform: "lowercase", color: "#6b6560",
               transition: "all 0.15s", display: "inline-block",
             }}
               onMouseEnter={e => { e.currentTarget.style.background = "#fafafa"; e.currentTarget.style.color = "#1a1814"; }}
@@ -880,7 +881,7 @@ function buildSystem(profile, wardrobe) {
   const profileLine = [profile.name, refs, colors, notes].filter(Boolean).join(" | ");
 
   const base = "You are a fashion expert specializing in balanced silhouettes and good color combinations. You are strict but fair, encouraging a modern European aesthetic — structured, quality over quantity, and always something that elevates the outfit without being flashy. You favor second-hand and reference Vestiaire and similar platforms, or European brands focused on quality.";
-  return base + "\n\nUser: " + profileLine + "\nWardrobe:\n" + wardrobeSummary + "\nGive concrete, direct advice in English. No empty compliments.";
+  return base + "\n\nUser: " + profileLine + "\nWardrobe:\n" + wardrobeSummary + "\nGive concrete, direct advice in English. No empty compliments.\n\nIMPORTANT: Write your entire response in lowercase only. Do not use any capital letters, not even for names, the start of sentences, or acronyms. Keep all punctuation normal.";
 }
 
 
@@ -930,7 +931,7 @@ function WardrobePicker({ wardrobe, selected, onToggle }) {
                 ) : (
                   <div style={{ width: "52px", height: "68px", background: "#efefef", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px" }}>
                     <Mono style={{ color: "#9c9590", fontSize: "0.38rem", textAlign: "center", lineHeight: 1.4, wordBreak: "break-word" }}>
-                      {item.name || "—"}
+                      <span data-preserve-case="true">{item.name || "—"}</span>
                     </Mono>
                   </div>
                 )}
@@ -946,7 +947,8 @@ function WardrobePicker({ wardrobe, selected, onToggle }) {
   );
 }
 
-function ChatStep({ profile, wardrobe, onBack, onEditProfile, onEditWardrobe, onReset }) {
+function ChatStep({ profile: profileProp, wardrobe, onBack, onEditProfile, onEditWardrobe, onReset }) {
+  const profile = profileProp || { name: "", colors: [], references: [], customRef: "", notes: "" };
   const [messages, setMessages]         = useState([]);
   const [input, setInput]               = useState("");
   const [loading, setLoading]           = useState(false);
@@ -1065,7 +1067,8 @@ function ChatStep({ profile, wardrobe, onBack, onEditProfile, onEditWardrobe, on
         throw new Error("Could not read server response");
       }
       if (!res.ok) throw new Error(data?.error?.message || "Server error " + res.status);
-      const txt = data.content?.find(b => b.type === "text")?.text || "";
+      const rawTxt = data.content?.find(b => b.type === "text")?.text || "";
+      const txt = rawTxt.toLowerCase();
       setMessages(p => [...p, { role: "assistant", content: txt, display: { text: txt, images: [] } }]);
     } catch (err) {
       const errMsg = "Error: " + (err?.message || String(err));
@@ -1092,8 +1095,8 @@ function ChatStep({ profile, wardrobe, onBack, onEditProfile, onEditWardrobe, on
           <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <div>
-                <span style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "1.1rem", fontWeight: "300", letterSpacing: "0.18em", textTransform: "uppercase", color: "#1a1814" }}>tenue</span>
-                <span style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "0.85rem", color: "#9c9590", marginLeft: "0.75rem" }}>{profile.name}</span>
+                <span style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "1.1rem", fontWeight: "300", letterSpacing: "0.18em", textTransform: "lowercase", color: "#1a1814" }}>tenue</span>
+                <span data-preserve-case="true" style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "0.85rem", color: "#9c9590", marginLeft: "0.75rem" }}>{profile?.name || ""}</span>
               </div>
               <Mono style={{ color: "#7a2535" }}>·</Mono>
               <Mono style={{ color: "#9c9590" }}>{allItems.length} items</Mono>
@@ -1138,7 +1141,7 @@ function ChatStep({ profile, wardrobe, onBack, onEditProfile, onEditWardrobe, on
                   background: "transparent", border: "none", borderBottom: "1px solid #eae6de",
                   padding: "0.6rem 0.85rem", cursor: "pointer",
                   fontFamily: "'DM Mono', monospace", fontSize: "0.58rem",
-                  letterSpacing: "0.1em", textTransform: "uppercase",
+                  letterSpacing: "0.1em", textTransform: "lowercase",
                   color: item.danger ? "#9a3a3a" : "#6b7280", transition: "background 0.1s",
                 }}
                   onMouseEnter={e => e.currentTarget.style.background = "#efefef"}
@@ -1155,7 +1158,7 @@ function ChatStep({ profile, wardrobe, onBack, onEditProfile, onEditWardrobe, on
         {messages.length === 0 && (
           <div style={{ textAlign: "center", padding: "2rem 0", animation: "fadeUp 0.6s ease" }}>
             <p style={{ color: "#6b6560", fontSize: "1rem", lineHeight: "1.8", marginBottom: "1.5rem" }}>
-              Hi, {profile.name}. I know your wardrobe.<br />What would you like to discuss today?
+              hi, <span data-preserve-case="true">{profile?.name || "there"}</span>. i know your wardrobe.<br />what would you like to discuss today?
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", justifyContent: "center" }}>
               {[
@@ -1192,17 +1195,19 @@ function ChatStep({ profile, wardrobe, onBack, onEditProfile, onEditWardrobe, on
               </div>
             )}
             {m.display?.text && (
-              <div style={{
-                maxWidth: "78%",
-                background: m.role === "user" ? "#1a1814" : "#f4f4f6",
-                color: m.role === "user" ? "#f4f4f6" : "#1a1a1a",
-                padding: "0.9rem 1.1rem", fontSize: "0.95rem", lineHeight: "1.75",
-                border: m.role === "assistant" ? "1px solid #dedad4" : "none",
-                whiteSpace: "pre-wrap", fontFamily: "'Fraunces', Georgia, serif",
-              }}>{m.display.text}</div>
+              <div
+                {...(m.role === "user" ? { "data-preserve-case": "true" } : {})}
+                style={{
+                  maxWidth: "78%",
+                  background: m.role === "user" ? "#1a1814" : "#f4f4f6",
+                  color: m.role === "user" ? "#f4f4f6" : "#1a1a1a",
+                  padding: "0.9rem 1.1rem", fontSize: "0.95rem", lineHeight: "1.75",
+                  border: m.role === "assistant" ? "1px solid #dedad4" : "none",
+                  whiteSpace: "pre-wrap", fontFamily: "'Fraunces', Georgia, serif",
+                }}>{m.display.text}</div>
             )}
             <Mono style={{ color: "#9c9590", marginTop: "0.3rem" }}>
-              {m.role === "user" ? profile.name : "Expert"}
+              {m.role === "user" ? <span data-preserve-case="true">{profile.name}</span> : "expert"}
             </Mono>
           </div>
         ))}
@@ -1277,7 +1282,7 @@ function ChatStep({ profile, wardrobe, onBack, onEditProfile, onEditWardrobe, on
               background: (!input.trim() && selected.length === 0) || loading ? "#7a2535" : "#1a1814",
               color: "#f4f4f6", border: "none", padding: "0 1.25rem", cursor: "pointer",
               fontFamily: "'DM Mono', monospace", fontSize: "0.65rem",
-              letterSpacing: "0.12em", textTransform: "uppercase",
+              letterSpacing: "0.12em", textTransform: "lowercase",
               height: "44px", whiteSpace: "nowrap", transition: "background 0.2s",
             }}
           >Send</button>
@@ -1289,7 +1294,8 @@ function ChatStep({ profile, wardrobe, onBack, onEditProfile, onEditWardrobe, on
 
 
 // ─── Outfit Rating ────────────────────────────────────────────────────────────
-function OutfitRating({ profile, wardrobe, onBack }) {
+function OutfitRating({ profile: profileProp, wardrobe, onBack }) {
+  const profile = profileProp || { name: "", colors: [], references: [], customRef: "", notes: "" };
   const [image, setImage]       = useState(null);
   const [base64, setBase64]     = useState(null);
   const [loading, setLoading]   = useState(false);
@@ -1346,7 +1352,7 @@ function OutfitRating({ profile, wardrobe, onBack }) {
     const refs = [...(profile.references || []), profile.customRef].filter(Boolean).join(", ") || "not specified";
     const colors = (profile.colors || []).join(", ") || "not specified";
 
-    const systemPrompt = "You are a fashion expert specializing in balanced silhouettes and good color combinations. You are strict but fair, encouraging a modern European aesthetic — structured, quality over quantity. You favor second-hand and reference Vestiaire and European quality brands. The user's name is " + profile.name + ". Style references: " + refs + ". Color palette: " + colors + ". Wardrobe:\n" + wardrobeSummary + "\n\nEvaluate the outfit in the image. Respond ONLY with valid JSON and nothing else:\n{\"score\": [number 1-10],\"strengths\": [list of 2-3 short bullets],\"weaknesses\": [list of 1-2 short bullets],\"suggestions\": [list of 1-2 concrete improvement suggestions]}";
+    const systemPrompt = "You are a fashion expert specializing in balanced silhouettes and good color combinations. You are strict but fair, encouraging a modern European aesthetic — structured, quality over quantity. You favor second-hand and reference Vestiaire and European quality brands. The user's name is " + profile.name + ". Style references: " + refs + ". Color palette: " + colors + ". Wardrobe:\n" + wardrobeSummary + "\n\nEvaluate the outfit in the image. Respond ONLY with valid JSON and nothing else:\n{\"score\": [number 1-10],\"strengths\": [list of 2-3 short bullets],\"weaknesses\": [list of 1-2 short bullets],\"suggestions\": [list of 1-2 concrete improvement suggestions]}\n\nIMPORTANT: all string values (strengths, weaknesses, suggestions) MUST be in lowercase only. No capital letters anywhere in the text.";
 
     try {
       const res = await fetch("/api/chat", {
@@ -1373,17 +1379,25 @@ function OutfitRating({ profile, wardrobe, onBack }) {
       const txt = data.content?.find(b => b.type === "text")?.text || "";
       const clean = txt.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
-      setResult(parsed);
+      // Safety net: lowercase all string arrays in case the model forgets
+      const lc = arr => (Array.isArray(arr) ? arr.map(s => typeof s === "string" ? s.toLowerCase() : s) : []);
+      const normalized = {
+        score: parsed.score,
+        strengths: lc(parsed.strengths),
+        weaknesses: lc(parsed.weaknesses),
+        suggestions: lc(parsed.suggestions),
+      };
+      setResult(normalized);
       // Save to history — provides revealed-preference data over time
       saveToHistory({
         id: `outfit-${Date.now()}`,
         date: new Date().toISOString(),
         base64: image.base64,
         mediaType: image.mediaType,
-        score: parsed.score,
-        strengths: parsed.strengths || [],
-        weaknesses: parsed.weaknesses || [],
-        suggestions: parsed.suggestions || [],
+        score: normalized.score,
+        strengths: normalized.strengths,
+        weaknesses: normalized.weaknesses,
+        suggestions: normalized.suggestions,
       });
     } catch (err) {
       setError("Something went wrong: " + err.message);
@@ -1398,7 +1412,7 @@ function OutfitRating({ profile, wardrobe, onBack }) {
       {/* Header */}
       <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #d4cfc8", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fafafa" }}>
         <BackBtn onClick={onBack} />
-        <span style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "1.1rem", fontWeight: "300", letterSpacing: "0.18em", textTransform: "uppercase", color: "#1a1814" }}>tenue</span>
+        <span style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "1.1rem", fontWeight: "300", letterSpacing: "0.18em", textTransform: "lowercase", color: "#1a1814" }}>tenue</span>
         <div style={{ width: "60px" }} />
       </div>
 
@@ -1428,7 +1442,7 @@ function OutfitRating({ profile, wardrobe, onBack }) {
                 style={{
                   border: "none", background: "#1a1814", color: "#f4f4f6",
                   fontFamily: "'DM Mono', monospace", fontSize: "0.6rem",
-                  letterSpacing: "0.18em", textTransform: "uppercase",
+                  letterSpacing: "0.18em", textTransform: "lowercase",
                   padding: "0.75rem 1.25rem", cursor: "pointer",
                 }}
               >Take photo</button>
@@ -1437,7 +1451,7 @@ function OutfitRating({ profile, wardrobe, onBack }) {
                 style={{
                   border: "1px solid #1a1814", background: "transparent", color: "#1a1814",
                   fontFamily: "'DM Mono', monospace", fontSize: "0.6rem",
-                  letterSpacing: "0.18em", textTransform: "uppercase",
+                  letterSpacing: "0.18em", textTransform: "lowercase",
                   padding: "0.75rem 1.25rem", cursor: "pointer",
                 }}
               >From gallery</button>
@@ -1515,7 +1529,7 @@ function OutfitRating({ profile, wardrobe, onBack }) {
             <button onClick={() => { setImage(null); setResult(null); }} style={{
               background: "transparent", border: "none", cursor: "pointer",
               fontFamily: "'DM Mono', monospace", fontSize: "0.58rem",
-              letterSpacing: "0.14em", color: "#9c9590", textTransform: "uppercase",
+              letterSpacing: "0.14em", color: "#9c9590", textTransform: "lowercase",
               borderBottom: "1px solid #d4cfc8", paddingBottom: "2px",
             }}>New outfit</button>
           </div>
@@ -1625,7 +1639,7 @@ function OutfitRating({ profile, wardrobe, onBack }) {
               <button onClick={() => deleteHistoryEntry(viewing.id)} style={{
                 background: "transparent", border: "1px solid #c4a0a0", color: "#8a3030",
                 fontFamily: "'DM Mono', monospace", fontSize: "0.55rem",
-                letterSpacing: "0.14em", textTransform: "uppercase",
+                letterSpacing: "0.14em", textTransform: "lowercase",
                 padding: "0.6rem 1.2rem", cursor: "pointer", marginTop: "0.5rem",
               }}>Delete from history</button>
             </div>
@@ -1675,7 +1689,7 @@ function Wishlist({ onBack }) {
       {/* Header */}
       <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #7a2535", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fafafa" }}>
         <BackBtn onClick={onBack} />
-        <span style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "1.1rem", fontWeight: "300", letterSpacing: "0.18em", textTransform: "uppercase", color: "#1a1814" }}>tenue</span>
+        <span style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "1.1rem", fontWeight: "300", letterSpacing: "0.18em", textTransform: "lowercase", color: "#1a1814" }}>tenue</span>
         <div style={{ width: "60px" }} />
       </div>
 
@@ -1700,7 +1714,7 @@ function Wishlist({ onBack }) {
                   <input value={item.note} onChange={e => updateItem(item.id, "note", e.target.value)}
                     placeholder="Note"
                     style={{ flex: 1, border: "none", borderBottom: "1px solid #7a2535", background: "transparent", padding: "0.35rem 0", fontSize: "0.9rem", color: "#6b6560", fontFamily: "'Fraunces', Georgia, serif" }} />
-                  <button onClick={() => removeItem(item.id)} style={{ background: "transparent", border: "none", cursor: "pointer", fontFamily: "'DM Mono', monospace", fontSize: "0.5rem", color: "#9c9590", textTransform: "uppercase", letterSpacing: "0.1em", flexShrink: 0 }}>Delete</button>
+                  <button onClick={() => removeItem(item.id)} style={{ background: "transparent", border: "none", cursor: "pointer", fontFamily: "'DM Mono', monospace", fontSize: "0.5rem", color: "#9c9590", textTransform: "lowercase", letterSpacing: "0.1em", flexShrink: 0 }}>Delete</button>
                 </div>
               </div>
             </div>
@@ -1712,7 +1726,7 @@ function Wishlist({ onBack }) {
             border: "1px solid #7a2535", background: "transparent",
             padding: "0.65rem 1.25rem", cursor: "pointer",
             fontFamily: "'DM Mono', monospace", fontSize: "0.58rem",
-            letterSpacing: "0.14em", textTransform: "uppercase", color: "#7a2535",
+            letterSpacing: "0.14em", textTransform: "lowercase", color: "#7a2535",
             transition: "all 0.15s",
           }}
             onMouseEnter={e => { e.currentTarget.style.background = "#7a2535"; e.currentTarget.style.color = "#fafafa"; }}
@@ -1745,8 +1759,7 @@ function NavRow({ label, onClick, locked }) {
 }
 
 function HomeScreen({ profile, wardrobe, onGoProfile, onGoWardrobe, onGoChat, onGoOutfit, onGoWishlist, onReset }) {
-  const hasProfile = profile?.name;
-  const canChat = !!hasProfile;
+  const hasProfile = !!profile?.name;
 
   return (
     <div style={{
@@ -1769,7 +1782,7 @@ function HomeScreen({ profile, wardrobe, onGoProfile, onGoWardrobe, onGoChat, on
             lineHeight: 1,
           }}>tenue</h1>
           {hasProfile && (
-            <p style={{ fontSize: "0.85rem", color: "#9c9590", marginTop: "3px" }}>{profile.name}</p>
+            <p data-preserve-case="true" style={{ fontSize: "0.85rem", color: "#9c9590", marginTop: "3px" }}>{profile.name}</p>
           )}
         </div>
         <div style={{ display: "flex", gap: "1rem" }}>
@@ -1784,9 +1797,9 @@ function HomeScreen({ profile, wardrobe, onGoProfile, onGoWardrobe, onGoChat, on
         <div style={{ width: "100%", maxWidth: "520px", padding: "0 1.5rem" }}>
           <NavRow label="profile"        onClick={onGoProfile}  locked={false} />
           <NavRow label="wardrobe"       onClick={onGoWardrobe} locked={false} />
-          <NavRow label="wishlist"       onClick={onGoWishlist} locked={!canChat} />
-          <NavRow label="consultation"   onClick={onGoChat}     locked={!canChat} />
-          <NavRow label="today's outfit" onClick={onGoOutfit}   locked={!canChat} />
+          <NavRow label="wishlist"       onClick={onGoWishlist} locked={false} />
+          <NavRow label="consultation"   onClick={onGoChat}     locked={false} />
+          <NavRow label="today's outfit" onClick={onGoOutfit}   locked={false} />
 
           {/* Colour palette */}
           {profile?.colors?.length > 0 && (
