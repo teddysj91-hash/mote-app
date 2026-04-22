@@ -1,14 +1,14 @@
 {
   "name": "Tenue",
   "short_name": "Tenue",
-  "description": "Din personlige stylist",
+  "description": "Your personal stylist",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f5f1ea",
   "theme_color": "#1a2332",
   "orientation": "portrait",
-  "lang": "no",
+  "lang": "en",
   "icons": [
     {
       "src": "/icon-192.png",
