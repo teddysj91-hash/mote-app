@@ -80,6 +80,13 @@ const STYLE_REF_MIGRATION = {
   "Casual og uformell": "Casual",
 };
 
+// When migrating old references → anchors, these items are really expressions
+// (modal register), not anchors (identity). Move them out of anchors.
+const EXPRESSION_FROM_LEGACY = {
+  "Casual": "Casual",
+  "Casual og uformell": "Casual",
+};
+
 const SK = { profile: "grd-profile", wardrobe: "grd-wardrobe", chat: "grd-chat" };
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -192,7 +199,8 @@ async function deleteAllCategories() {
   for (const cat of GARMENT_CATEGORIES) await del(catKey(cat.id));
 }
 
-// Migrate legacy Norwegian profile data to English names
+// Migrate legacy Norwegian profile data to English names,
+// and fold legacy `references` + `customRef` into the new `anchors` + `expressions` model.
 function migrateProfile(p) {
   if (!p) return p;
   const migrated = { ...p };
@@ -202,6 +210,29 @@ function migrateProfile(p) {
   if (Array.isArray(p.references)) {
     migrated.references = p.references.map(r => STYLE_REF_MIGRATION[r] || r);
   }
+
+  // Only auto-migrate if the new fields don't already exist (first load after upgrade).
+  if (!Array.isArray(p.anchors)) {
+    const legacyRefs = (Array.isArray(migrated.references) ? migrated.references : []);
+    const legacyCustom = typeof p.customRef === "string" && p.customRef.trim() ? [p.customRef.trim()] : [];
+    const all = [...legacyRefs, ...legacyCustom];
+    // Anything mapped to an expression gets split out, not kept as an anchor.
+    const pulledExpressions = [];
+    const anchorsOnly = [];
+    for (const item of all) {
+      if (EXPRESSION_FROM_LEGACY[item]) {
+        pulledExpressions.push(EXPRESSION_FROM_LEGACY[item]);
+      } else {
+        anchorsOnly.push(item);
+      }
+    }
+    migrated.anchors = Array.from(new Set(anchorsOnly)).slice(0, 3);
+    if (!Array.isArray(p.expressions)) {
+      migrated.expressions = Array.from(new Set(pulledExpressions)).slice(0, 3);
+    }
+  }
+  if (!Array.isArray(migrated.expressions)) migrated.expressions = [];
+
   return migrated;
 }
 
@@ -311,22 +342,46 @@ function CategoryCircle({ cat, count, active, onClick }) {
   );
 }
 
-// ─── Style Picker ────────────────────────────────────────────────────────────
+// ─── Anchor Picker ───────────────────────────────────────────────────────────
+// Anchors = who/what grounds your style. Can be an archetype (Academic, Diplomat)
+// or a person (Alain Delon). Max 3 — forces signal over noise.
 
-const STYLE_GROUPS = [
-  { label: "Aesthetic", refs: ["European intellectual", "Minimalist", "Classic and timeless", "Sculptural and avant-garde"] },
-  { label: "Expression", refs: ["Androgynous", "Romantic and feminine", "Casual"] },
+const ANCHOR_MAX = 3;
+
+const ANCHOR_GROUPS = [
+  { label: "Archetypes", refs: [
+    "Academic", "Diplomat", "Architect", "Journalist",
+    "Naval officer", "Italian industrialist", "Country gentleman",
+    "European intellectual", "Minimalist", "Classic and timeless",
+  ]},
+  { label: "Icons", refs: [
+    "Alain Delon", "JFK Jr", "Bryan Ferry", "Gianni Agnelli",
+    "James Bond", "Steve McQueen",
+  ]},
 ];
 
-function StylePicker({ selRefs, onToggle, customRef, onCustomRef }) {
+function AnchorPicker({ anchors, onChange }) {
   const [open, setOpen] = useState(false);
-  const [activeGroup, setActiveGroup] = useState(STYLE_GROUPS[0].label);
-  const selectedCount = selRefs.length;
-  const hasCustom = customRef.trim().length > 0;
+  const [activeGroup, setActiveGroup] = useState(ANCHOR_GROUPS[0].label);
+  const [draft, setDraft] = useState("");
+  const count = anchors.length;
+  const atMax = count >= ANCHOR_MAX;
+
+  function toggle(a) {
+    if (anchors.includes(a)) onChange(anchors.filter(x => x !== a));
+    else if (!atMax) onChange([...anchors, a]);
+  }
+  function addCustom() {
+    const v = draft.trim();
+    if (!v || atMax || anchors.includes(v)) return;
+    onChange([...anchors, v]);
+    setDraft("");
+  }
+  function remove(a) { onChange(anchors.filter(x => x !== a)); }
 
   return (
     <div style={{ marginBottom: "1.75rem" }}>
-      {/* Header row */}
+      {/* Header */}
       <button
         onClick={() => setOpen(p => !p)}
         style={{
@@ -337,34 +392,48 @@ function StylePicker({ selRefs, onToggle, customRef, onCustomRef }) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 0 }}>
-          <Mono style={{ color: "#6b6560", flexShrink: 0 }}>Style references</Mono>
-          {(selectedCount > 0 || hasCustom) && (
+          <Mono style={{ color: "#6b6560", flexShrink: 0 }}>Anchors</Mono>
+          {count > 0 && (
             <div style={{ display: "flex", gap: "4px", flexWrap: "nowrap", overflow: "hidden" }}>
-              {selRefs.slice(0, 2).map(r => (
-                <span key={r} style={{
+              {anchors.slice(0, 2).map(r => (
+                <span key={r} data-preserve-case="true" style={{
                   fontFamily: "'Fraunces', Georgia, serif",
                   fontSize: "0.8rem", color: "#6b6560",
                   whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                 }}>{r}</span>
               ))}
-              {selRefs.length > 2 && <Mono style={{ color: "#9c9590", fontSize: "0.45rem", flexShrink: 0 }}>+{selRefs.length - 2}</Mono>}
-              {hasCustom && selRefs.length === 0 && (
-                <span style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "0.8rem", color: "#6b6560", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "180px" }}>{customRef}</span>
-              )}
+              {count > 2 && <Mono style={{ color: "#9c9590", fontSize: "0.45rem", flexShrink: 0 }}>+{count - 2}</Mono>}
             </div>
           )}
         </div>
         <Mono style={{ color: "#9c9590", fontSize: "0.55rem", flexShrink: 0 }}>
-          {selectedCount > 0 ? `${selectedCount} selected ` : ""}{open ? "▲" : "▼"}
+          {count}/{ANCHOR_MAX} {open ? "▲" : "▼"}
         </Mono>
       </button>
 
       {/* Dropdown */}
       {open && (
         <div style={{ border: "1px solid #d4cfc8", borderTop: "none", background: "#fafafa", animation: "fadeUp 0.15s ease" }}>
+          {/* Selected anchors row */}
+          {count > 0 && (
+            <div style={{ padding: "0.85rem 0.9rem 0", display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+              {anchors.map(a => (
+                <button key={a} onClick={() => remove(a)} data-preserve-case="true" style={{
+                  border: "1px solid #1a1814", background: "#1a1814",
+                  color: "#f4f4f6", padding: "0.35rem 0.75rem",
+                  fontFamily: "'Fraunces', Georgia, serif", fontSize: "0.85rem",
+                  cursor: "pointer", display: "flex", alignItems: "center", gap: "0.45rem",
+                }}>
+                  {a}
+                  <span style={{ fontSize: "0.7rem", opacity: 0.75 }}>✕</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Group tabs */}
-          <div style={{ display: "flex", borderBottom: "1px solid #d4cfc8" }}>
-            {STYLE_GROUPS.map(g => (
+          <div style={{ display: "flex", borderBottom: "1px solid #d4cfc8", marginTop: count > 0 ? "0.85rem" : 0 }}>
+            {ANCHOR_GROUPS.map(g => (
               <button key={g.label} onClick={() => setActiveGroup(g.label)} style={{
                 background: "transparent", border: "none",
                 borderBottom: activeGroup === g.label ? "1.5px solid #1a1814" : "1.5px solid transparent",
@@ -377,37 +446,137 @@ function StylePicker({ selRefs, onToggle, customRef, onCustomRef }) {
             ))}
           </div>
 
-          {/* Options */}
+          {/* Suggestion chips */}
           <div style={{ padding: "0.85rem 0.9rem", display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
-            {(STYLE_GROUPS.find(g => g.label === activeGroup)?.refs || []).map(r => {
-              const on = selRefs.includes(r);
+            {(ANCHOR_GROUPS.find(g => g.label === activeGroup)?.refs || []).map(r => {
+              const on = anchors.includes(r);
+              const disabled = !on && atMax;
               return (
-                <button key={r} onClick={() => onToggle(r)} style={{
+                <button key={r} onClick={() => toggle(r)} disabled={disabled} data-preserve-case="true" style={{
                   border: `1px solid ${on ? "#1a1814" : "#7a2535"}`,
                   background: on ? "#1a1814" : "transparent",
-                  color: on ? "#f4f4f6" : "#6b6560",
+                  color: on ? "#f4f4f6" : disabled ? "#c0beb9" : "#6b6560",
                   padding: "0.4rem 0.85rem",
                   fontFamily: "'Fraunces', Georgia, serif",
                   fontSize: "0.9rem",
-                  cursor: "pointer", transition: "all 0.15s",
+                  cursor: disabled ? "not-allowed" : "pointer",
+                  opacity: disabled ? 0.5 : 1,
+                  transition: "all 0.15s",
                 }}>{r}</button>
               );
             })}
           </div>
 
-          {/* Free text */}
-          <div style={{ padding: "0 0.9rem 0.85rem" }}>
+          {/* Free text input */}
+          <div style={{ padding: "0 0.9rem 0.85rem", display: "flex", gap: "0.5rem", alignItems: "center" }}>
             <input
-              value={customRef}
-              onChange={e => onCustomRef(e.target.value)}
-              placeholder="Specific references — people, films, brands… (optional)"
+              value={draft}
+              onChange={e => setDraft(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addCustom(); } }}
+              disabled={atMax}
+              placeholder={atMax ? "Remove an anchor to add another" : "Add your own — e.g. 1970s academic"}
               style={{
-                width: "100%", border: "none", borderBottom: "1px solid #d4cfc8",
+                flex: 1, border: "none", borderBottom: "1px solid #d4cfc8",
                 background: "transparent", padding: "0.45rem 0",
                 fontSize: "0.95rem", color: "#1a1814",
                 fontFamily: "'Fraunces', Georgia, serif",
+                opacity: atMax ? 0.45 : 1,
               }}
             />
+            <button
+              onClick={addCustom}
+              disabled={atMax || !draft.trim()}
+              style={{
+                border: "none", background: "transparent",
+                fontFamily: "'DM Mono', monospace", fontSize: "0.55rem",
+                letterSpacing: "0.12em", color: "#1a1814",
+                cursor: (atMax || !draft.trim()) ? "not-allowed" : "pointer",
+                opacity: (atMax || !draft.trim()) ? 0.3 : 1,
+                padding: "0.3rem 0.5rem",
+              }}
+            >add</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Expression Picker ───────────────────────────────────────────────────────
+// Expressions = the modal register you operate in. Pick 1-3 defaults.
+
+const EXPRESSION_MAX = 3;
+const EXPRESSION_OPTIONS = [
+  "Formal", "Smart-casual", "Casual", "Strict", "Relaxed", "Sporty",
+];
+
+function ExpressionPicker({ expressions, onChange }) {
+  const [open, setOpen] = useState(false);
+  const count = expressions.length;
+  const atMax = count >= EXPRESSION_MAX;
+
+  function toggle(e) {
+    if (expressions.includes(e)) onChange(expressions.filter(x => x !== e));
+    else if (!atMax) onChange([...expressions, e]);
+  }
+
+  return (
+    <div style={{ marginBottom: "1.75rem" }}>
+      {/* Header */}
+      <button
+        onClick={() => setOpen(p => !p)}
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          width: "100%", background: "transparent", border: "none",
+          borderBottom: `1px solid ${open ? "#1a1814" : "#7a2535"}`,
+          padding: "0.5rem 0", cursor: "pointer", transition: "border-color 0.15s",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 0 }}>
+          <Mono style={{ color: "#6b6560", flexShrink: 0 }}>Expressions</Mono>
+          {count > 0 && (
+            <div style={{ display: "flex", gap: "4px", flexWrap: "nowrap", overflow: "hidden" }}>
+              {expressions.slice(0, 3).map(r => (
+                <span key={r} data-preserve-case="true" style={{
+                  fontFamily: "'Fraunces', Georgia, serif",
+                  fontSize: "0.8rem", color: "#6b6560",
+                  whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                }}>{r}</span>
+              ))}
+            </div>
+          )}
+        </div>
+        <Mono style={{ color: "#9c9590", fontSize: "0.55rem", flexShrink: 0 }}>
+          {count}/{EXPRESSION_MAX} {open ? "▲" : "▼"}
+        </Mono>
+      </button>
+
+      {/* Dropdown */}
+      {open && (
+        <div style={{ border: "1px solid #d4cfc8", borderTop: "none", background: "#fafafa", animation: "fadeUp 0.15s ease" }}>
+          <div style={{ padding: "0.85rem 0.9rem", display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+            {EXPRESSION_OPTIONS.map(e => {
+              const on = expressions.includes(e);
+              const disabled = !on && atMax;
+              return (
+                <button key={e} onClick={() => toggle(e)} disabled={disabled} data-preserve-case="true" style={{
+                  border: `1px solid ${on ? "#1a1814" : "#7a2535"}`,
+                  background: on ? "#1a1814" : "transparent",
+                  color: on ? "#f4f4f6" : disabled ? "#c0beb9" : "#6b6560",
+                  padding: "0.4rem 0.85rem",
+                  fontFamily: "'Fraunces', Georgia, serif",
+                  fontSize: "0.9rem",
+                  cursor: disabled ? "not-allowed" : "pointer",
+                  opacity: disabled ? 0.5 : 1,
+                  transition: "all 0.15s",
+                }}>{e}</button>
+              );
+            })}
+          </div>
+          <div style={{ padding: "0 0.9rem 0.85rem" }}>
+            <Mono style={{ color: "#9c9590", fontSize: "0.48rem" }}>
+              The modes you normally operate in. Pick 1–3.
+            </Mono>
           </div>
         </div>
       )}
@@ -515,23 +684,25 @@ function ColorPicker({ selColors, onToggle }) {
 
 function ProfileStep({ onComplete, existing }) {
   const [name, setName]           = useState(existing?.name || "");
-  const [selRefs, setSelRefs]     = useState(existing?.references || []);
-  const [customRef, setCustomRef] = useState(existing?.customRef || "");
+  const [anchors, setAnchors]     = useState(Array.isArray(existing?.anchors) ? existing.anchors : []);
+  const [expressions, setExpressions] = useState(Array.isArray(existing?.expressions) ? existing.expressions : []);
   const [selColors, setSelColors] = useState(existing?.colors || []);
   const [notes, setNotes]         = useState(existing?.notes || "");
   const [saving, setSaving]       = useState(false);
 
-  const toggleRef   = r => setSelRefs(p  => p.includes(r) ? p.filter(x => x !== r) : [...p, r]);
   const toggleColor = c => setSelColors(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c]);
   const canGo = name.trim() && selColors.length > 0;
 
   async function go() {
     setSaving(true);
-    const refs = selRefs.filter(r => r !== "Other (describe yourself)");
     const profile = {
       name: name.trim(),
-      references: refs,
-      customRef: customRef.trim(),
+      anchors: anchors.slice(0, ANCHOR_MAX),
+      expressions: expressions.slice(0, EXPRESSION_MAX),
+      // Keep legacy fields written as empty so old readers don't explode,
+      // but new code paths read from anchors/expressions.
+      references: [],
+      customRef: "",
       colors: selColors,
       notes: notes.trim(),
     };
@@ -558,7 +729,9 @@ function ProfileStep({ onComplete, existing }) {
           style={{ width: "100%", border: "none", borderBottom: "1px solid #dedad4", background: "transparent", padding: "0.6rem 0", fontSize: "1.1rem", color: "#1a1814", fontFamily: "'Fraunces', Georgia, serif" }} />
       </label>
 
-      <StylePicker selRefs={selRefs} onToggle={toggleRef} customRef={customRef} onCustomRef={setCustomRef} />
+      <AnchorPicker anchors={anchors} onChange={setAnchors} />
+
+      <ExpressionPicker expressions={expressions} onChange={setExpressions} />
 
       <ColorPicker selColors={selColors} onToggle={toggleColor} />
 
@@ -860,13 +1033,21 @@ function WardrobeStep({ profile, onComplete, onBack, existing }) {
 
 // ─── Chat Step ────────────────────────────────────────────────────────────────
 
+// Build the persona line used across all prompts: anchors (who), expressions (how), colors, notes.
+// Falls back to legacy references+customRef so profiles from before the anchors/expressions migration still work.
+function profilePersona(profile) {
+  const anchorsArr = Array.isArray(profile.anchors) && profile.anchors.length
+    ? profile.anchors
+    : [...(profile.references || []), ...(profile.customRef ? [profile.customRef] : [])];
+  const expressionsArr = Array.isArray(profile.expressions) ? profile.expressions : [];
+  const anchors = anchorsArr.join(", ") || "not specified";
+  const expressions = expressionsArr.join(", ") || "not specified";
+  const colors = (profile.colors || []).join(", ") || "not specified";
+  return { anchors, expressions, colors, notes: profile.notes || "" };
+}
+
 function buildSystem(profile, wardrobe) {
-  const refs = [
-    ...(profile.references || []),
-    ...(profile.customRef ? [profile.customRef] : []),
-  ].join(", ") || "not specified";
-  const colors = (profile.colors || []).join(", ")     || "not specified";
-  const notes  = profile.notes || "";
+  const { anchors, expressions, colors, notes } = profilePersona(profile);
 
   const lines = wardrobe ? GARMENT_CATEGORIES.flatMap(cat => {
     const items = (wardrobe[cat.id] || []);
@@ -878,10 +1059,16 @@ function buildSystem(profile, wardrobe) {
   }) : [];
 
   const wardrobeSummary = lines.length ? lines.join("\n") : "No items registered";
-  const profileLine = [profile.name, refs, colors, notes].filter(Boolean).join(" | ");
 
   const base = "You are a fashion expert specializing in balanced silhouettes and good color combinations. You are strict but fair, encouraging a modern European aesthetic — structured, quality over quantity, and always something that elevates the outfit without being flashy. You favor second-hand and reference Vestiaire and similar platforms, or European brands focused on quality.";
-  return base + "\n\nUser: " + profileLine + "\nWardrobe:\n" + wardrobeSummary + "\nGive concrete, direct advice in English. No empty compliments.\n\nIMPORTANT: Write your entire response in lowercase only. Do not use any capital letters, not even for names, the start of sentences, or acronyms. Keep all punctuation normal.";
+  const personaBlock =
+    "User: " + (profile.name || "unknown") + "\n" +
+    "Anchors (identity — archetype and/or icons that ground the style): " + anchors + "\n" +
+    "Expressions (default modal register — e.g. formal, smart-casual, casual): " + expressions + ". " +
+    "If the user specifies an occasion, let that override the default expression.\n" +
+    "Color palette: " + colors +
+    (notes ? "\nNotes: " + notes : "");
+  return base + "\n\n" + personaBlock + "\nWardrobe:\n" + wardrobeSummary + "\nGive concrete, direct advice in English. No empty compliments.\n\nIMPORTANT: Write your entire response in lowercase only. Do not use any capital letters, not even for names, the start of sentences, or acronyms. Keep all punctuation normal.";
 }
 
 
@@ -948,7 +1135,7 @@ function WardrobePicker({ wardrobe, selected, onToggle }) {
 }
 
 function ChatStep({ profile: profileProp, wardrobe, onBack, onEditProfile, onEditWardrobe, onReset }) {
-  const profile = profileProp || { name: "", colors: [], references: [], customRef: "", notes: "" };
+  const profile = profileProp || { name: "", colors: [], anchors: [], expressions: [], references: [], customRef: "", notes: "" };
   const [messages, setMessages]         = useState([]);
   const [input, setInput]               = useState("");
   const [loading, setLoading]           = useState(false);
@@ -1340,7 +1527,7 @@ function ChatStep({ profile: profileProp, wardrobe, onBack, onEditProfile, onEdi
 
 // ─── Outfit Rating ────────────────────────────────────────────────────────────
 function OutfitRating({ profile: profileProp, wardrobe, onBack }) {
-  const profile = profileProp || { name: "", colors: [], references: [], customRef: "", notes: "" };
+  const profile = profileProp || { name: "", colors: [], anchors: [], expressions: [], references: [], customRef: "", notes: "" };
   const [image, setImage]       = useState(null);
   const [base64, setBase64]     = useState(null);
   const [loading, setLoading]   = useState(false);
@@ -1480,10 +1667,9 @@ function OutfitRating({ profile: profileProp, wardrobe, onBack }) {
       );
     }).join("\n") : "";
 
-    const refs = [...(profile.references || []), profile.customRef].filter(Boolean).join(", ") || "not specified";
-    const colors = (profile.colors || []).join(", ") || "not specified";
+    const { anchors, expressions, colors } = profilePersona(profile);
 
-    const systemPrompt = "You are a fashion expert specializing in balanced silhouettes and good color combinations. You are strict but fair, encouraging a modern European aesthetic — structured, quality over quantity. You favor second-hand and reference Vestiaire and European quality brands. The user's name is " + profile.name + ". Style references: " + refs + ". Color palette: " + colors + ". Wardrobe:\n" + wardrobeSummary + "\n\nEvaluate the outfit in the image. Respond ONLY with valid JSON and nothing else:\n{\"score\": [number 1-10],\"strengths\": [list of 2-3 short bullets],\"weaknesses\": [list of 1-2 short bullets],\"suggestions\": [list of 1-2 concrete improvement suggestions]}\n\nIMPORTANT: all string values (strengths, weaknesses, suggestions) MUST be in lowercase only. No capital letters anywhere in the text.";
+    const systemPrompt = "You are a fashion expert specializing in balanced silhouettes and good color combinations. You are strict but fair, encouraging a modern European aesthetic — structured, quality over quantity. You favor second-hand and reference Vestiaire and European quality brands. The user's name is " + profile.name + ". Anchors (identity): " + anchors + ". Expressions (default modal register): " + expressions + ". Color palette: " + colors + ". Wardrobe:\n" + wardrobeSummary + "\n\nEvaluate the outfit in the image against the user's anchors and expressions. Respond ONLY with valid JSON and nothing else:\n{\"score\": [number 1-10],\"strengths\": [list of 2-3 short bullets],\"weaknesses\": [list of 1-2 short bullets],\"suggestions\": [list of 1-2 concrete improvement suggestions]}\n\nIMPORTANT: all string values (strengths, weaknesses, suggestions) MUST be in lowercase only. No capital letters anywhere in the text.";
 
     try {
       const res = await fetch("/api/chat", {
@@ -1947,8 +2133,7 @@ function Wishlist({ profile, wardrobe, onBack }) {
             return its.map(it => `${cat.label}: ${[it.color, it.name, it.brand].filter(Boolean).join(", ")}`);
           }).join("\n") || "(no items registered)"
         : "(unknown)";
-      const refs = [...(profile?.references || []), profile?.customRef].filter(Boolean).join(", ") || "not specified";
-      const colors = (profile?.colors || []).join(", ") || "not specified";
+      const { anchors, expressions, colors } = profilePersona(profile || {});
       const systemPrompt =
         "You are tenue — a personal style assistant helping the user plan future purchases. " +
         "You know their current wishlist and existing wardrobe so you don't suggest duplicates. " +
@@ -1957,7 +2142,8 @@ function Wishlist({ profile, wardrobe, onBack }) {
         "and point out what's missing in their wardrobe when asked. Keep responses short and conversational, " +
         "2-5 sentences unless asked for more.\n\n" +
         "User: " + (profile?.name || "unknown") + "\n" +
-        "Style references: " + refs + "\n" +
+        "Anchors (identity): " + anchors + "\n" +
+        "Expressions (default modal register): " + expressions + "\n" +
         "Color palette: " + colors + "\n\n" +
         "Current wishlist:\n" + wishLines + "\n\n" +
         "Existing wardrobe:\n" + wardrobeLines + "\n\n" +
