@@ -956,7 +956,9 @@ function ChatStep({ profile: profileProp, wardrobe, onBack, onEditProfile, onEdi
   const [selected, setSelected]         = useState([]);
   const [showMenu, setShowMenu]         = useState(false);
   const [savingChat, setSavingChat]     = useState(false);
+  const [uploadedImgs, setUploadedImgs] = useState([]);
   const bottomRef = useRef();
+  const chatUploadRef = useRef();
   const system = buildSystem(profile, wardrobe);
 
   const allItems = GARMENT_CATEGORIES.flatMap(cat =>
@@ -997,9 +999,23 @@ function ChatStep({ profile: profileProp, wardrobe, onBack, onEditProfile, onEdi
 
   function toggle(id) { setSelected(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]); }
 
+  async function attachImage(file) {
+    if (!file) return;
+    try {
+      const { dataURL, base64, mediaType } = await compressImage(file, 1024, 0.82);
+      setUploadedImgs(p => [...p, {
+        id: `up-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        dataURL, base64, mediaType,
+      }]);
+    } catch (e) {
+      console.error("upload failed:", e);
+    }
+  }
+  function removeUploaded(id) { setUploadedImgs(p => p.filter(u => u.id !== id)); }
+
   async function send() {
     const text = input.trim();
-    if (!text && selected.length === 0) return;
+    if (!text && selected.length === 0 && uploadedImgs.length === 0) return;
 
     const parts = [];
     const dispImgs = [];
@@ -1012,6 +1028,13 @@ function ChatStep({ profile: profileProp, wardrobe, onBack, onEditProfile, onEdi
         const label = [item.category, item.name, item.color, item.material].filter(Boolean).join(" — ");
         parts.push({ type: "text", text: `[${label}]` });
         dispImgs.push({ id: item.id, preview: item.preview || b64url(item.base64, mt) });
+      }
+    }
+    if (uploadedImgs.length > 0) {
+      for (const up of uploadedImgs) {
+        parts.push({ type: "image", source: { type: "base64", media_type: up.mediaType, data: up.base64 } });
+        parts.push({ type: "text", text: "[uploaded image]" });
+        dispImgs.push({ id: up.id, preview: up.dataURL });
       }
     }
     if (text) parts.push({ type: "text", text });
@@ -1042,7 +1065,7 @@ function ChatStep({ profile: profileProp, wardrobe, onBack, onEditProfile, onEdi
       })
       .filter(Boolean);
     setMessages(p => [...p, userMsg]);
-    setInput(""); setSelected([]); setShowWardrobe(false); setLoading(true);
+    setInput(""); setSelected([]); setUploadedImgs([]); setShowWardrobe(false); setLoading(true);
 
     try {
       const payload = {
@@ -1232,7 +1255,7 @@ function ChatStep({ profile: profileProp, wardrobe, onBack, onEditProfile, onEdi
 
       {/* Input */}
       <div style={{ borderTop: "1px solid #dedad4", padding: "0.85rem 1.25rem", background: "#fafafa", flexShrink: 0 }}>
-        {selected.length > 0 && (
+        {(selected.length > 0 || uploadedImgs.length > 0) && (
           <div style={{ display: "flex", gap: "4px", marginBottom: "0.6rem", flexWrap: "wrap" }}>
             {allItems.filter(i => selected.includes(i.id)).map(item => {
               const src = item.preview || b64url(item.base64, item.mediaType || "image/jpeg");
@@ -1248,6 +1271,17 @@ function ChatStep({ profile: profileProp, wardrobe, onBack, onEditProfile, onEdi
                 </div>
               );
             })}
+            {uploadedImgs.map(up => (
+              <div key={up.id} style={{ position: "relative" }}>
+                <img src={up.dataURL} alt="" style={{ width: "36px", height: "48px", objectFit: "cover", border: "1px dashed #7a2535" }} />
+                <button onClick={() => removeUploaded(up.id)} style={{
+                  position: "absolute", top: "-4px", right: "-4px",
+                  background: "#1a1814", color: "#f4f4f6", border: "none",
+                  width: "14px", height: "14px", cursor: "pointer", fontSize: "0.5rem",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>×</button>
+              </div>
+            ))}
           </div>
         )}
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "flex-end" }}>
@@ -1261,6 +1295,17 @@ function ChatStep({ profile: profileProp, wardrobe, onBack, onEditProfile, onEdi
               letterSpacing: "0.1em", transition: "all 0.15s", height: "44px",
             }}>▤</button>
           )}
+          <button onClick={() => chatUploadRef.current?.click()} title="Upload image" style={{
+            border: "1px solid #7a2535", background: "transparent", color: "#6b7280",
+            padding: "0.6rem 0.75rem", cursor: "pointer",
+            fontFamily: "'DM Mono', monospace", fontSize: "0.9rem",
+            letterSpacing: "0.1em", transition: "all 0.15s", height: "44px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>+</button>
+          <input
+            ref={chatUploadRef} type="file" accept="image/*" hidden
+            onChange={e => { const f = e.target.files[0]; if (f) attachImage(f); e.target.value = ""; }}
+          />
           <textarea
             value={input} onChange={e => setInput(e.target.value)} onKeyDown={onKey}
             placeholder="Ask about your wardrobe, outfits, purchases…" rows={1}
@@ -1277,9 +1322,9 @@ function ChatStep({ profile: profileProp, wardrobe, onBack, onEditProfile, onEdi
           />
           <button
             onClick={send}
-            disabled={loading || (!input.trim() && selected.length === 0)}
+            disabled={loading || (!input.trim() && selected.length === 0 && uploadedImgs.length === 0)}
             style={{
-              background: (!input.trim() && selected.length === 0) || loading ? "#7a2535" : "#1a1814",
+              background: (!input.trim() && selected.length === 0 && uploadedImgs.length === 0) || loading ? "#7a2535" : "#1a1814",
               color: "#f4f4f6", border: "none", padding: "0 1.25rem", cursor: "pointer",
               fontFamily: "'DM Mono', monospace", fontSize: "0.65rem",
               letterSpacing: "0.12em", textTransform: "lowercase",
@@ -1303,8 +1348,13 @@ function OutfitRating({ profile: profileProp, wardrobe, onBack }) {
   const [error, setError]       = useState(null);
   const [history, setHistory]   = useState([]);
   const [viewing, setViewing]   = useState(null); // history entry in full-view
+  const [followupMessages, setFollowupMessages] = useState([]);
+  const [followupInput, setFollowupInput] = useState("");
+  const [followupLoading, setFollowupLoading] = useState(false);
+  const [currentReviewId, setCurrentReviewId] = useState(null);
   const cameraRef = useRef();
   const galleryRef = useRef();
+  const followupBottomRef = useRef();
 
   // Load history on mount
   useEffect(() => {
@@ -1313,6 +1363,10 @@ function OutfitRating({ profile: profileProp, wardrobe, onBack }) {
       if (Array.isArray(saved)) setHistory(saved);
     })();
   }, []);
+
+  useEffect(() => {
+    followupBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [followupMessages, followupLoading]);
 
   async function handleFile(file) {
     // Higher resolution for outfit photos than for wardrobe (user sees it again + Claude analyzes it)
@@ -1334,6 +1388,83 @@ function OutfitRating({ profile: profileProp, wardrobe, onBack }) {
     setHistory(next);
     await save("tenue-outfit-history", next);
     if (viewing?.id === id) setViewing(null);
+  }
+
+  async function updateHistoryEntry(id, patch) {
+    const next = history.map(h => h.id === id ? { ...h, ...patch } : h);
+    setHistory(next);
+    await save("tenue-outfit-history", next);
+  }
+
+  async function sendFollowup() {
+    const text = followupInput.trim();
+    if (!text || !image || !result) return;
+    const userMsg = { role: "user", content: text };
+    const nextMsgs = [...followupMessages, userMsg];
+    setFollowupMessages(nextMsgs);
+    setFollowupInput("");
+    setFollowupLoading(true);
+    try {
+      const systemPrompt =
+        "you are tenue — a fashion expert. you already reviewed the outfit in the image. previous review:\n" +
+        "- score: " + result.score + "/10\n" +
+        "- strengths: " + (result.strengths || []).join("; ") + "\n" +
+        "- weaknesses: " + (result.weaknesses || []).join("; ") + "\n" +
+        "- suggestions: " + (result.suggestions || []).join("; ") + "\n\n" +
+        "the user may now correct details (fabric, fit, occasion, colors) or ask follow-up questions. " +
+        "update your read when new information justifies it — say clearly if your take changes, and why. " +
+        "be direct, strict but fair. keep responses short, 2-4 sentences unless asked for more.\n\n" +
+        "IMPORTANT: write your entire response in lowercase only. no capital letters anywhere.";
+      // First message includes the image; subsequent text-only
+      const apiMsgs = nextMsgs.map((m, idx) => {
+        if (idx === 0 && m.role === "user") {
+          return {
+            role: "user",
+            content: [
+              { type: "image", source: { type: "base64", media_type: image.mediaType, data: image.base64 } },
+              { type: "text", text: m.content },
+            ],
+          };
+        }
+        return { role: m.role, content: m.content };
+      });
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 600,
+          system: systemPrompt,
+          messages: apiMsgs,
+        }),
+      });
+      let data;
+      try { data = await res.json(); } catch (e) { throw new Error("Could not read server response"); }
+      if (!res.ok) throw new Error(data?.error?.message || "Server error " + res.status);
+      const txt = (data.content?.find(b => b.type === "text")?.text || "").toLowerCase();
+      const updated = [...nextMsgs, { role: "assistant", content: txt }];
+      setFollowupMessages(updated);
+      if (currentReviewId) {
+        updateHistoryEntry(currentReviewId, { followupMessages: updated });
+      }
+    } catch (err) {
+      setFollowupMessages(p => [...p, { role: "assistant", content: "error: " + (err?.message || String(err)) }]);
+    }
+    setFollowupLoading(false);
+  }
+
+  function onFollowupKey(e) {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendFollowup(); }
+  }
+
+  function resetReview() {
+    setImage(null);
+    setResult(null);
+    setFollowupMessages([]);
+    setCurrentReviewId(null);
   }
 
   async function analyse() {
@@ -1389,8 +1520,11 @@ function OutfitRating({ profile: profileProp, wardrobe, onBack }) {
       };
       setResult(normalized);
       // Save to history — provides revealed-preference data over time
+      const newId = `outfit-${Date.now()}`;
+      setCurrentReviewId(newId);
+      setFollowupMessages([]);
       saveToHistory({
-        id: `outfit-${Date.now()}`,
+        id: newId,
         date: new Date().toISOString(),
         base64: image.base64,
         mediaType: image.mediaType,
@@ -1398,6 +1532,7 @@ function OutfitRating({ profile: profileProp, wardrobe, onBack }) {
         strengths: normalized.strengths,
         weaknesses: normalized.weaknesses,
         suggestions: normalized.suggestions,
+        followupMessages: [],
       });
     } catch (err) {
       setError("Something went wrong: " + err.message);
@@ -1462,7 +1597,7 @@ function OutfitRating({ profile: profileProp, wardrobe, onBack }) {
         ) : (
           <div style={{ position: "relative", marginBottom: "1.25rem" }}>
             <img src={image.dataURL} alt="Outfit" style={{ width: "100%", maxHeight: "480px", objectFit: "contain", display: "block", background: "#e8e8eb" }} />
-            <button onClick={() => { setImage(null); setResult(null); }} style={{
+            <button onClick={resetReview} style={{
               position: "absolute", top: "8px", right: "8px",
               background: "#1a1814", color: "#f4f4f6", border: "none",
               width: "28px", height: "28px", cursor: "pointer",
@@ -1525,8 +1660,75 @@ function OutfitRating({ profile: profileProp, wardrobe, onBack }) {
               ))}
             </div>
 
+            {/* Follow-up chat — elaborate or correct */}
+            <div style={{ marginTop: "1.75rem", borderTop: "1px solid #d4cfc8", paddingTop: "1.5rem" }}>
+              <Mono style={{ color: "#7a2535", display: "block", marginBottom: "0.85rem" }}>Elaborate or correct</Mono>
+
+              {followupMessages.length === 0 && !followupLoading && (
+                <p style={{ color: "#6b6560", fontSize: "0.92rem", lineHeight: 1.7, marginBottom: "0.85rem" }}>
+                  add context — fabric, fit, occasion — and i'll update my read.
+                </p>
+              )}
+
+              {followupMessages.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "0.85rem" }}>
+                  {followupMessages.map((m, i) => (
+                    <div key={i}
+                      {...(m.role === "user" ? { "data-preserve-case": "true" } : {})}
+                      style={{
+                        alignSelf: m.role === "user" ? "flex-end" : "flex-start",
+                        maxWidth: "90%",
+                        background: m.role === "user" ? "#1a1814" : "#fafafa",
+                        color: m.role === "user" ? "#f4f4f6" : "#1a1a1a",
+                        padding: "0.7rem 0.95rem", fontSize: "0.92rem", lineHeight: 1.6,
+                        border: m.role === "assistant" ? "1px solid #dedad4" : "none",
+                        whiteSpace: "pre-wrap", fontFamily: "'Fraunces', Georgia, serif",
+                      }}>{m.content}</div>
+                  ))}
+                  {followupLoading && (
+                    <div style={{ display: "flex", gap: "5px", paddingLeft: "4px", alignItems: "center" }}>
+                      {[0, 1, 2].map(i => (
+                        <div key={i} style={{
+                          width: "5px", height: "5px", background: "#7a2535",
+                          animation: `dot 1.2s ease ${i * 0.2}s infinite`,
+                        }} />
+                      ))}
+                    </div>
+                  )}
+                  <div ref={followupBottomRef} />
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: "0.5rem", alignItems: "flex-end", marginBottom: "1.5rem" }}>
+                <textarea
+                  value={followupInput}
+                  onChange={e => setFollowupInput(e.target.value)}
+                  onKeyDown={onFollowupKey}
+                  placeholder="e.g. 'the pants are linen, not cotton' or 'is this ok for a business casual meeting?'"
+                  rows={1}
+                  style={{
+                    flex: 1, border: "1px solid #dedad4", background: "#fafafa",
+                    padding: "0.55rem 0.8rem", fontSize: "0.92rem", color: "#1a1814",
+                    lineHeight: "1.5", minHeight: "40px", maxHeight: "110px", overflow: "auto",
+                    fontFamily: "'Fraunces', Georgia, serif",
+                  }}
+                  onInput={e => {
+                    e.target.style.height = "auto";
+                    e.target.style.height = Math.min(e.target.scrollHeight, 110) + "px";
+                  }}
+                />
+                <button onClick={sendFollowup} disabled={followupLoading || !followupInput.trim()} style={{
+                  background: followupLoading || !followupInput.trim() ? "#7a2535" : "#1a1814",
+                  color: "#f4f4f6", border: "none", padding: "0 1rem", cursor: "pointer",
+                  fontFamily: "'DM Mono', monospace", fontSize: "0.58rem",
+                  letterSpacing: "0.12em", textTransform: "lowercase",
+                  height: "40px", whiteSpace: "nowrap",
+                }}>Send</button>
+              </div>
+            </div>
+
             {/* Try again */}
-            <button onClick={() => { setImage(null); setResult(null); }} style={{
+            <button onClick={resetReview} style={{
               background: "transparent", border: "none", cursor: "pointer",
               fontFamily: "'DM Mono', monospace", fontSize: "0.58rem",
               letterSpacing: "0.14em", color: "#9c9590", textTransform: "lowercase",
@@ -1636,6 +1838,26 @@ function OutfitRating({ profile: profileProp, wardrobe, onBack }) {
                   ))}
                 </div>
               )}
+              {Array.isArray(viewing.followupMessages) && viewing.followupMessages.length > 0 && (
+                <div style={{ marginBottom: "1.25rem", borderTop: "1px solid #d4cfc8", paddingTop: "1rem" }}>
+                  <Mono style={{ color: "#7a2535", display: "block", marginBottom: "0.6rem" }}>Conversation</Mono>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem" }}>
+                    {viewing.followupMessages.map((m, i) => (
+                      <div key={i}
+                        {...(m.role === "user" ? { "data-preserve-case": "true" } : {})}
+                        style={{
+                          alignSelf: m.role === "user" ? "flex-end" : "flex-start",
+                          maxWidth: "90%",
+                          background: m.role === "user" ? "#1a1814" : "#fafafa",
+                          color: m.role === "user" ? "#f4f4f6" : "#1a1a1a",
+                          padding: "0.6rem 0.85rem", fontSize: "0.88rem", lineHeight: 1.55,
+                          border: m.role === "assistant" ? "1px solid #dedad4" : "none",
+                          whiteSpace: "pre-wrap", fontFamily: "'Fraunces', Georgia, serif",
+                        }}>{m.content}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <button onClick={() => deleteHistoryEntry(viewing.id)} style={{
                 background: "transparent", border: "1px solid #c4a0a0", color: "#8a3030",
                 fontFamily: "'DM Mono', monospace", fontSize: "0.55rem",
@@ -1653,17 +1875,32 @@ function OutfitRating({ profile: profileProp, wardrobe, onBack }) {
 
 // ─── Wishlist ─────────────────────────────────────────────────────────────────
 
-function Wishlist({ onBack }) {
+function Wishlist({ profile, wardrobe, onBack }) {
   const [items, setItems] = useState([]);
   const [loaded, setLoaded] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const chatBottomRef = useRef();
 
   useEffect(() => {
     (async () => {
       const saved = await load("tenue-wishlist");
       if (Array.isArray(saved)) setItems(saved);
+      const savedMsgs = await load("tenue-wishlist-chat");
+      if (Array.isArray(savedMsgs)) setMessages(savedMsgs);
       setLoaded(true);
     })();
   }, []);
+
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, chatLoading]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    save("tenue-wishlist-chat", messages);
+  }, [messages, loaded]);
 
   async function addItem() {
     const newItem = { id: `wish-${Date.now()}`, name: "", brand: "", url: "", note: "" };
@@ -1682,6 +1919,75 @@ function Wishlist({ onBack }) {
     const updated = items.filter(i => i.id !== id);
     setItems(updated);
     await save("tenue-wishlist", updated);
+  }
+
+  async function clearChat() {
+    setMessages([]);
+    await del("tenue-wishlist-chat");
+  }
+
+  async function sendChat() {
+    const text = chatInput.trim();
+    if (!text) return;
+    const userMsg = { role: "user", content: text };
+    const nextMsgs = [...messages, userMsg];
+    setMessages(nextMsgs);
+    setChatInput("");
+    setChatLoading(true);
+    try {
+      const wishLines = items.length
+        ? items.map((it, i) => {
+            const label = [it.name, it.brand, it.note].filter(Boolean).join(" — ");
+            return `${i + 1}. ${label || "(empty)"}`;
+          }).join("\n")
+        : "(wishlist is empty)";
+      const wardrobeLines = wardrobe
+        ? GARMENT_CATEGORIES.flatMap(cat => {
+            const its = wardrobe[cat.id] || [];
+            return its.map(it => `${cat.label}: ${[it.color, it.name, it.brand].filter(Boolean).join(", ")}`);
+          }).join("\n") || "(no items registered)"
+        : "(unknown)";
+      const refs = [...(profile?.references || []), profile?.customRef].filter(Boolean).join(", ") || "not specified";
+      const colors = (profile?.colors || []).join(", ") || "not specified";
+      const systemPrompt =
+        "You are tenue — a personal style assistant helping the user plan future purchases. " +
+        "You know their current wishlist and existing wardrobe so you don't suggest duplicates. " +
+        "Be direct and opinionated — strict but fair. Favor European quality brands and second-hand (Vestiaire). " +
+        "Help them refine their wishes, suggest better alternatives, flag items that don't fit their aesthetic, " +
+        "and point out what's missing in their wardrobe when asked. Keep responses short and conversational, " +
+        "2-5 sentences unless asked for more.\n\n" +
+        "User: " + (profile?.name || "unknown") + "\n" +
+        "Style references: " + refs + "\n" +
+        "Color palette: " + colors + "\n\n" +
+        "Current wishlist:\n" + wishLines + "\n\n" +
+        "Existing wardrobe:\n" + wardrobeLines + "\n\n" +
+        "IMPORTANT: Write your entire response in lowercase only. No capital letters anywhere.";
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 800,
+          system: systemPrompt,
+          messages: nextMsgs.map(m => ({ role: m.role, content: m.content })),
+        }),
+      });
+      let data;
+      try { data = await res.json(); } catch (e) { throw new Error("Could not read server response"); }
+      if (!res.ok) throw new Error(data?.error?.message || "Server error " + res.status);
+      const txt = (data.content?.find(b => b.type === "text")?.text || "").toLowerCase();
+      setMessages(p => [...p, { role: "assistant", content: txt }]);
+    } catch (err) {
+      setMessages(p => [...p, { role: "assistant", content: "error: " + (err?.message || String(err)) }]);
+    }
+    setChatLoading(false);
+  }
+
+  function onChatKey(e) {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); }
   }
 
   return (
@@ -1733,6 +2039,95 @@ function Wishlist({ onBack }) {
             onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#7a2535"; }}
           >+ Add</button>
         )}
+
+        {/* Chat with tenue about the wishlist */}
+        <div style={{ marginTop: "3rem", borderTop: "1px solid #d4cfc8", paddingTop: "1.5rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+            <Mono style={{ color: "#7a2535" }}>Ask tenue</Mono>
+            {messages.length > 0 && (
+              <button onClick={clearChat} style={{
+                background: "transparent", border: "none", cursor: "pointer",
+                fontFamily: "'DM Mono', monospace", fontSize: "0.5rem",
+                letterSpacing: "0.1em", color: "#9c9590", textTransform: "lowercase",
+              }}>Clear chat</button>
+            )}
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem", marginBottom: "1rem" }}>
+            {messages.length === 0 && !chatLoading && (
+              <div style={{ padding: "0.25rem 0" }}>
+                <p style={{ color: "#6b6560", fontSize: "0.95rem", lineHeight: 1.7, marginBottom: "0.9rem" }}>
+                  refine your wishes, get alternatives, or ask what's missing.
+                </p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+                  {[
+                    "what am i missing?",
+                    "any duplicates or bad fits?",
+                    "suggest a better version of item 1",
+                  ].map(q => (
+                    <button key={q} onClick={() => setChatInput(q)} style={{
+                      background: "transparent", border: "1px solid #dedad4",
+                      padding: "0.4rem 0.8rem", cursor: "pointer",
+                      fontFamily: "'Fraunces', Georgia, serif",
+                      fontSize: "0.85rem", color: "#6b6560", transition: "all 0.15s",
+                    }}
+                      onMouseEnter={e => { e.target.style.borderColor = "#1a1814"; e.target.style.color = "#1a1814"; }}
+                      onMouseLeave={e => { e.target.style.borderColor = "#dedad4"; e.target.style.color = "#6b6560"; }}
+                    >{q}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {messages.map((m, i) => (
+              <div key={i}
+                {...(m.role === "user" ? { "data-preserve-case": "true" } : {})}
+                style={{
+                  alignSelf: m.role === "user" ? "flex-end" : "flex-start",
+                  maxWidth: "85%",
+                  background: m.role === "user" ? "#1a1814" : "#fafafa",
+                  color: m.role === "user" ? "#f4f4f6" : "#1a1a1a",
+                  padding: "0.8rem 1rem", fontSize: "0.95rem", lineHeight: 1.65,
+                  border: m.role === "assistant" ? "1px solid #dedad4" : "none",
+                  whiteSpace: "pre-wrap", fontFamily: "'Fraunces', Georgia, serif",
+                }}>{m.content}</div>
+            ))}
+            {chatLoading && (
+              <div style={{ display: "flex", gap: "5px", paddingLeft: "4px", alignItems: "center" }}>
+                {[0, 1, 2].map(i => (
+                  <div key={i} style={{
+                    width: "5px", height: "5px", background: "#7a2535",
+                    animation: `dot 1.2s ease ${i * 0.2}s infinite`,
+                  }} />
+                ))}
+              </div>
+            )}
+            <div ref={chatBottomRef} />
+          </div>
+
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "flex-end" }}>
+            <textarea
+              value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={onChatKey}
+              placeholder="ask tenue about your wishlist…" rows={1}
+              style={{
+                flex: 1, border: "1px solid #dedad4", background: "#fafafa",
+                padding: "0.6rem 0.85rem", fontSize: "0.95rem", color: "#1a1814",
+                lineHeight: "1.5", minHeight: "42px", maxHeight: "110px", overflow: "auto",
+                fontFamily: "'Fraunces', Georgia, serif",
+              }}
+              onInput={e => {
+                e.target.style.height = "auto";
+                e.target.style.height = Math.min(e.target.scrollHeight, 110) + "px";
+              }}
+            />
+            <button onClick={sendChat} disabled={chatLoading || !chatInput.trim()} style={{
+              background: chatLoading || !chatInput.trim() ? "#7a2535" : "#1a1814",
+              color: "#f4f4f6", border: "none", padding: "0 1.1rem", cursor: "pointer",
+              fontFamily: "'DM Mono', monospace", fontSize: "0.6rem",
+              letterSpacing: "0.12em", textTransform: "lowercase",
+              height: "42px", whiteSpace: "nowrap", transition: "background 0.2s",
+            }}>Send</button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1922,7 +2317,7 @@ export default function App() {
       )}
 
       {view === "wishlist" && (
-        <Wishlist onBack={() => setView("home")} />
+        <Wishlist profile={profile} wardrobe={wardrobe} onBack={() => setView("home")} />
       )}
     </>
   );
