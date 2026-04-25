@@ -2812,6 +2812,7 @@ export default function App() {
   const [view, setView]         = useState(null);
   const [profile, setProfile]   = useState(null);
   const [wardrobe, setWardrobe] = useState(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -2830,7 +2831,10 @@ export default function App() {
     })();
   }, []);
 
-  async function reset() {
+  function askReset() { setShowResetConfirm(true); }
+
+  async function doReset() {
+    setShowResetConfirm(false);
     await del(SK.profile); await del(SK.wardrobe); await del(SK.chat);
     await deleteAllCategories();
     setProfile(null);
@@ -2849,6 +2853,63 @@ export default function App() {
     <>
       <style>{FONTS + css}</style>
 
+      {/* Reset confirmation modal */}
+      {showResetConfirm && (
+        <div
+          onClick={() => setShowResetConfirm(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 1000,
+            background: "rgba(26,24,20,0.45)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: "#f4f4f6", border: "1px solid #dedad4",
+              padding: "2rem 2rem 1.5rem", maxWidth: "320px", width: "90%",
+              fontFamily: "'Fraunces', 'Times New Roman', serif",
+            }}
+          >
+            <p style={{ margin: "0 0 0.4rem", fontSize: "1.05rem", color: "#1a1814", fontWeight: 500 }}>
+              Start over?
+            </p>
+            <p style={{
+              margin: "0 0 1.6rem",
+              fontFamily: "'DM Mono', 'Courier New', monospace",
+              fontSize: "0.58rem", letterSpacing: "0.08em",
+              color: "#6b7280", lineHeight: 1.6,
+            }}>
+              This will permanently delete your profile, wardrobe, and chat history.
+            </p>
+            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setShowResetConfirm(false)}
+                style={{
+                  background: "transparent", border: "1px solid #dedad4",
+                  padding: "0.45rem 1rem", cursor: "pointer",
+                  fontFamily: "'DM Mono', monospace", fontSize: "0.58rem",
+                  letterSpacing: "0.12em", textTransform: "lowercase", color: "#6b7280",
+                }}
+              >
+                cancel
+              </button>
+              <button
+                onClick={doReset}
+                style={{
+                  background: "#1a1814", border: "none",
+                  padding: "0.45rem 1rem", cursor: "pointer",
+                  fontFamily: "'DM Mono', monospace", fontSize: "0.58rem",
+                  letterSpacing: "0.12em", textTransform: "lowercase", color: "#f4f4f6",
+                }}
+              >
+                yes, reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {view === "home" && (
         <HomeScreen
           profile={profile}
@@ -2858,7 +2919,7 @@ export default function App() {
           onGoChat={() => setView("chat")}
           onGoOutfit={() => setView("outfit")}
           onGoWishlist={() => setView("wishlist")}
-          onReset={reset}
+          onReset={askReset}
         />
       )}
 
@@ -2890,7 +2951,7 @@ export default function App() {
           onBack={() => setView("home")}
           onEditProfile={() => setView("profile")}
           onEditWardrobe={() => setView("wardrobe")}
-          onReset={reset}
+          onReset={askReset}
         />
       )}
 
