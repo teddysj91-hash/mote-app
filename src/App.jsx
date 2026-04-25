@@ -1358,7 +1358,7 @@ function ChatStep({ profile: profileProp, wardrobe, onBack, onEditProfile, onEdi
     try {
       const payload = {
         model: "claude-sonnet-4-20250514",
-        max_tokens: 1024,
+        max_tokens: 2048,
         system: String(system || "You are a fashion expert. Respond in English."),
         messages: apiMsgs,
       };
