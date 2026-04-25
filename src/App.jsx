@@ -32,12 +32,13 @@ const PRESET_COLORS = [
   { name: "Gray",          hex: "#6b7280" },
   { name: "Silver",        hex: "#9ca3af" },
   { name: "White",         hex: "#f4f4f6" },
+  { name: "Parchment",     hex: "#f0e8dc" },
   { name: "Cream",         hex: "#e8e0d0" },
-  { name: "Taupe",         hex: "#7a2535" },
+  { name: "Taupe",         hex: "#c4b49a" },
   { name: "Sand",          hex: "#d4c5a9" },
   { name: "Camel",         hex: "#b5833a" },
   { name: "Cognac",        hex: "#8b4513" },
-  { name: "Midnight blue", hex: "#0f1f3d" },
+  { name: "Midnight",      hex: "#0f1f3d" },
   { name: "Navy",          hex: "#1a1814" },
   { name: "Dusty blue",    hex: "#7a8fa0" },
   { name: "Light blue",    hex: "#b8ccd8" },
@@ -45,7 +46,7 @@ const PRESET_COLORS = [
   { name: "Moss",          hex: "#6b7c5a" },
   { name: "Bottle green",  hex: "#2d4a3e" },
   { name: "Forest green",  hex: "#3a5c45" },
-  { name: "Burgundy",      hex: "#6b2737" },
+  { name: "Burgundy",      hex: "#7a2535" },
   { name: "Deep red",      hex: "#8b1a2a" },
   { name: "Rust",          hex: "#a0522d" },
   { name: "Terracotta",    hex: "#c1673a" },
@@ -63,7 +64,7 @@ const PRESET_COLORS = [
 const COLOR_NAME_MIGRATION = {
   "Svart": "Black", "Kullgrå": "Charcoal", "Grå": "Gray", "Sølvgrå": "Silver",
   "Hvit": "White", "Kremhvit": "Cream", "Kamel": "Camel",
-  "Midnattsblå": "Midnight blue", "Støvblå": "Dusty blue", "Lyseblå": "Light blue",
+  "Midnattsblå": "Midnight", "Midnight blue": "Midnight", "Støvblå": "Dusty blue", "Lyseblå": "Light blue",
   "Olivengrønt": "Olive", "Mosegrønt": "Moss", "Flaskegrønt": "Bottle green",
   "Skogsgrønt": "Forest green", "Burgunder": "Burgundy", "Dyprød": "Deep red",
   "Terrakotta": "Terracotta", "Støvroset": "Dusty rose", "Gammelrosa": "Antique pink",
@@ -93,17 +94,39 @@ const SK = { profile: "grd-profile", wardrobe: "grd-wardrobe", chat: "grd-chat" 
 
 const FONTS = `@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=DM+Mono:wght@300;400;500&display=swap');`;
 
+// Brand identity v1.0 — primary palette + extended editorial palette.
+// Burgundy is the single accent; never compete with it.
 const css = `
+  :root {
+    --bg:        #f4f4f6;
+    --surface:   #fafafa;
+    --ink:       #1a1814;
+    --ink-mid:   #6b6560;
+    --ink-muted: #9c9590;
+    --hairline:  #e4e0da;
+    --burgundy:  #7a2535;
+    --blush:     #e8b4b8;
+    --midnight:  #0f1f3d;
+    --taupe:     #c4b49a;
+    --olive:     #4a5c3f;
+    --espresso:  #2a2420;
+    --parchment: #f0e8dc;
+  }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  ::selection { background: #1a1814; color: #e8e4dc; }
+  ::selection { background: #1a1814; color: #f4f4f6; }
   ::-webkit-scrollbar { width: 2px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #b8a898; }
-  body { background: #f4f4f6; text-transform: lowercase; }
+  ::-webkit-scrollbar-thumb { background: #d4cfc8; }
+  html, body { background: #f4f4f6; color: #1a1814; }
+  body { text-transform: lowercase; -webkit-font-smoothing: antialiased; font-feature-settings: "kern" 1, "liga" 1; }
   input, textarea, [data-preserve-case], [data-preserve-case] * { text-transform: none !important; }
-  textarea, input { font-family: 'Fraunces', Georgia, serif; }
+  textarea, input { font-family: 'Fraunces', 'Times New Roman', Times, serif; font-weight: 300; }
   textarea:focus, input:focus { outline: none; }
   textarea { resize: none; }
+  .tenue-mark { font-family: 'Fraunces', 'Times New Roman', Times, serif; font-weight: 300; letter-spacing: -0.01em; line-height: 1; }
+  .tenue-display { font-family: 'Fraunces', 'Times New Roman', Times, serif; font-weight: 300; letter-spacing: -0.015em; line-height: 1.05; }
+  .tenue-label { font-family: 'DM Mono', 'Courier New', monospace; font-weight: 300; letter-spacing: 0.16em; text-transform: lowercase; }
+  .tenue-rule { height: 1px; background: var(--burgundy); border: 0; }
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(14px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -241,11 +264,11 @@ function migrateProfile(p) {
 function Mono({ children, style = {} }) {
   return (
     <span style={{
-      fontFamily: "'DM Mono', monospace",
+      fontFamily: "'DM Mono', 'Courier New', monospace",
+      fontWeight: 300,
       fontSize: "0.58rem",
-      letterSpacing: "0.18em",
-      textTransform: "none",
-      letterSpacing: "0.08em",
+      letterSpacing: "0.16em",
+      textTransform: "lowercase",
       ...style,
     }}>{children}</span>
   );
@@ -254,7 +277,8 @@ function Mono({ children, style = {} }) {
 function Btn({ children, onClick, variant = "primary", disabled = false, small = false }) {
   const s = {
     border: "none",
-    fontFamily: "'DM Mono', monospace",
+    fontFamily: "'DM Mono', 'Courier New', monospace",
+    fontWeight: 300,
     fontSize: small ? "0.55rem" : "0.6rem",
     letterSpacing: "0.18em",
     textTransform: "lowercase",
@@ -264,10 +288,11 @@ function Btn({ children, onClick, variant = "primary", disabled = false, small =
     opacity: disabled ? 0.45 : 1,
   };
   const v = {
-    primary: { background: "#1a1814", color: "#f4f4f6" },
-    ghost:   { background: "transparent", color: "#1a1814", border: "1px solid #1a1814" },
-    danger:  { background: "transparent", color: "#8a3030", border: "1px solid #c4a0a0" },
-    muted:   { background: "#7a2535", color: "#6b6560" },
+    primary:  { background: "#1a1814", color: "#f4f4f6" },
+    ghost:    { background: "transparent", color: "#1a1814", border: "1px solid #1a1814" },
+    danger:   { background: "transparent", color: "#7a2535", border: "1px solid #d4cfc8" },
+    accent:   { background: "#7a2535", color: "#f4f4f6" },
+    muted:    { background: "transparent", color: "#9c9590", border: "1px solid #e4e0da" },
   };
   return <button onClick={disabled ? undefined : onClick} style={{ ...s, ...v[variant] }}>{children}</button>;
 }
@@ -279,6 +304,60 @@ function Spinner() {
       border: "1.5px solid #d8d4ce", borderTopColor: "#1a1814",
       borderRadius: "50%", animation: "spin 0.8s linear infinite", display: "inline-block",
     }} />
+  );
+}
+
+// Render chat-style text: strip markdown bold (**...**), turn [text](url) and bare urls
+// into proper anchor tags. Sentence casing preserved (caller wraps in data-preserve-case).
+function RichText({ text }) {
+  if (!text) return null;
+  // 1. Drop ** wrappers around brand/product names — keep the inner text plain.
+  let src = String(text).replace(/\*\*(.+?)\*\*/g, "$1");
+  // 2. Tokenize: markdown links first, then bare URLs.
+  const tokens = [];
+  const linkRe = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+  const urlRe  = /\bhttps?:\/\/[^\s<>()"']+/g;
+  let cursor = 0;
+  // Pull out [text](url) first
+  src.replace(linkRe, (match, label, url, idx) => {
+    if (idx > cursor) tokens.push({ type: "text", value: src.slice(cursor, idx) });
+    tokens.push({ type: "link", label, url });
+    cursor = idx + match.length;
+    return match;
+  });
+  if (cursor < src.length) tokens.push({ type: "text", value: src.slice(cursor) });
+  // Then split text segments on bare URLs
+  const final = [];
+  for (const tok of tokens) {
+    if (tok.type !== "text") { final.push(tok); continue; }
+    let last = 0;
+    const s = tok.value;
+    s.replace(urlRe, (url, idx) => {
+      if (idx > last) final.push({ type: "text", value: s.slice(last, idx) });
+      // Trim trailing punctuation that shouldn't be part of the URL
+      const trimmed = url.replace(/[.,;:!?)\]]+$/, "");
+      const tail = url.slice(trimmed.length);
+      final.push({ type: "link", label: trimmed, url: trimmed });
+      if (tail) final.push({ type: "text", value: tail });
+      last = idx + url.length;
+      return url;
+    });
+    if (last < s.length) final.push({ type: "text", value: s.slice(last) });
+  }
+  return (
+    <>
+      {final.map((tok, i) => {
+        if (tok.type === "link") {
+          return (
+            <a key={i} href={tok.url} target="_blank" rel="noopener noreferrer"
+               style={{ color: "#7a2535", textDecoration: "underline", textUnderlineOffset: "2px", textDecorationThickness: "0.5px" }}>
+              {tok.label}
+            </a>
+          );
+        }
+        return <span key={i}>{tok.value}</span>;
+      })}
+    </>
   );
 }
 
@@ -1060,7 +1139,7 @@ function buildSystem(profile, wardrobe) {
 
   const wardrobeSummary = lines.length ? lines.join("\n") : "No items registered";
 
-  const base = "You are a fashion expert specializing in balanced silhouettes and good color combinations. You are strict but fair, encouraging a modern European aesthetic — structured, quality over quantity, and always something that elevates the outfit without being flashy. You favor second-hand and reference Vestiaire and similar platforms, or European brands focused on quality.";
+  const base = "You are tenue — a personal style consultant for the considered wardrobe. European in spirit, precise in opinion, never showy. Direct and considered, never chatty. Quality-obsessed but not elitist. Honest about what doesn't work. You favor second-hand first and reference Vestiaire Collective and European quality brands.";
   const personaBlock =
     "User: " + (profile.name || "unknown") + "\n" +
     "Anchors (identity — archetype and/or icons that ground the style): " + anchors + "\n" +
@@ -1068,7 +1147,13 @@ function buildSystem(profile, wardrobe) {
     "If the user specifies an occasion, let that override the default expression.\n" +
     "Color palette: " + colors +
     (notes ? "\nNotes: " + notes : "");
-  return base + "\n\n" + personaBlock + "\nWardrobe:\n" + wardrobeSummary + "\nGive concrete, direct advice in English. No empty compliments.\n\nIMPORTANT: Write your entire response in lowercase only. Do not use any capital letters, not even for names, the start of sentences, or acronyms. Keep all punctuation normal.";
+  const formatBlock =
+    "Formatting rules:\n" +
+    "- Use normal sentence capitalization. Capitalise the first letter of sentences and proper nouns. Use full stops.\n" +
+    "- Do NOT wrap brand names, product names, or anything else in markdown bold (** **). Write brand names plainly.\n" +
+    "- When you reference a brand, retailer, or website that exists online, include a link in markdown format: [Brand name](https://example.com). Use the official site (e.g. https://www.vestiairecollective.com, https://www.mrporter.com, https://www.cos.com, https://www.uniqlo.com, https://www.massimodutti.com, https://www.arket.com, https://www.zara.com, https://www.matchesfashion.com, https://www.farfetch.com). If you don't know the exact URL, omit the link rather than guess.\n" +
+    "- No emoji, no exclamation marks. Be specific, not vague.";
+  return base + "\n\n" + personaBlock + "\nWardrobe:\n" + wardrobeSummary + "\n\n" + formatBlock + "\n\nGive concrete, direct advice in English. No empty compliments.";
 }
 
 
@@ -1155,32 +1240,48 @@ function ChatStep({ profile: profileProp, wardrobe, onBack, onEditProfile, onEdi
   useEffect(() => {
     (async () => {
       const saved = await load(SK.chat);
-      if (Array.isArray(saved) && saved.length > 0) {
-        // Only restore messages that have valid string or array content
-        const valid = saved.filter(m =>
-          m && m.role && m.display &&
-          (typeof m.content === "string" || Array.isArray(m.content))
-        );
-        setMessages(valid);
-      }
+      if (!Array.isArray(saved) || saved.length === 0) return;
+      // Restore messages and rehydrate the display block for ones missing it
+      const valid = saved
+        .filter(m => m && m.role && (typeof m.content === "string" || Array.isArray(m.content)))
+        .map(m => {
+          if (m.display && typeof m.display === "object") return m;
+          // Backfill display.text from content so the message renders
+          let text = "";
+          if (typeof m.content === "string") text = m.content;
+          else if (Array.isArray(m.content)) {
+            const t = m.content.find(b => b && b.type === "text");
+            text = t?.text || "";
+          }
+          return { ...m, display: { text, images: [] } };
+        });
+      setMessages(valid);
     })();
   }, []);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
 
   useEffect(() => {
-    if (messages.length === 0) return;
     const t = setTimeout(async () => {
       setSavingChat(true);
-      // Strip base64 image blobs before storing — text only
-      const toStore = messages.map(m => ({
-        ...m,
-        content: m.content.filter(b => b.type === "text"),
-        display: { ...m.display, images: [] },
-      }));
+      // Strip base64 image blobs before storing — text only.
+      // Content may be a string (text-only) or an array (with images) — handle both.
+      const toStore = messages.map(m => {
+        let content;
+        if (typeof m.content === "string") {
+          content = m.content;
+        } else if (Array.isArray(m.content)) {
+          const textBlocks = m.content.filter(b => b && b.type === "text");
+          content = textBlocks.length === 1 ? textBlocks[0].text : textBlocks;
+        } else {
+          content = String(m.content || "");
+        }
+        const display = m.display ? { ...m.display, images: [] } : { text: typeof content === "string" ? content : "", images: [] };
+        return { role: m.role, content, display };
+      });
       await save(SK.chat, toStore);
       setSavingChat(false);
-    }, 800);
+    }, 600);
     return () => clearTimeout(t);
   }, [messages]);
 
@@ -1277,8 +1378,7 @@ function ChatStep({ profile: profileProp, wardrobe, onBack, onEditProfile, onEdi
         throw new Error("Could not read server response");
       }
       if (!res.ok) throw new Error(data?.error?.message || "Server error " + res.status);
-      const rawTxt = data.content?.find(b => b.type === "text")?.text || "";
-      const txt = rawTxt.toLowerCase();
+      const txt = data.content?.find(b => b.type === "text")?.text || "";
       setMessages(p => [...p, { role: "assistant", content: txt, display: { text: txt, images: [] } }]);
     } catch (err) {
       const errMsg = "Error: " + (err?.message || String(err));
@@ -1394,31 +1494,37 @@ function ChatStep({ profile: profileProp, wardrobe, onBack, onEditProfile, onEdi
         {messages.map((m, i) => (
           <div key={i} style={{
             display: "flex", flexDirection: "column",
-            alignItems: m.role === "user" ? "flex-end" : "flex-start",
+            alignItems: "stretch",
             animation: "fadeUp 0.3s ease",
+            maxWidth: "640px", width: "100%", margin: "0 auto",
           }}>
+            <Mono style={{
+              color: m.role === "user" ? "#1a1814" : "#7a2535",
+              marginBottom: "0.4rem",
+              fontSize: "0.5rem",
+            }}>
+              {m.role === "user"
+                ? <span data-preserve-case="true">{profile.name || "you"}</span>
+                : "tenue"}
+            </Mono>
             {m.display?.images?.length > 0 && (
-              <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", justifyContent: "flex-end", marginBottom: "0.4rem", maxWidth: "75%" }}>
+              <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginBottom: "0.5rem" }}>
                 {m.display.images.map((img, idx) => (
-                  <img key={idx} src={img.preview} alt="" style={{ width: "72px", height: "96px", objectFit: "cover", border: "1px solid #dedad4" }} />
+                  <img key={idx} src={img.preview} alt="" style={{ width: "72px", height: "96px", objectFit: "cover" }} />
                 ))}
               </div>
             )}
             {m.display?.text && (
-              <div
-                {...(m.role === "user" ? { "data-preserve-case": "true" } : {})}
-                style={{
-                  maxWidth: "78%",
-                  background: m.role === "user" ? "#1a1814" : "#f4f4f6",
-                  color: m.role === "user" ? "#f4f4f6" : "#1a1a1a",
-                  padding: "0.9rem 1.1rem", fontSize: "0.95rem", lineHeight: "1.75",
-                  border: m.role === "assistant" ? "1px solid #dedad4" : "none",
-                  whiteSpace: "pre-wrap", fontFamily: "'Fraunces', Georgia, serif",
-                }}>{m.display.text}</div>
+              <div data-preserve-case="true" style={{
+                color: "#1a1814",
+                fontSize: "1rem", lineHeight: 1.7,
+                whiteSpace: "pre-wrap",
+                fontFamily: "'Fraunces', 'Times New Roman', Times, serif",
+                fontWeight: 300,
+              }}>
+                <RichText text={m.display.text} />
+              </div>
             )}
-            <Mono style={{ color: "#9c9590", marginTop: "0.3rem" }}>
-              {m.role === "user" ? <span data-preserve-case="true">{profile.name}</span> : "expert"}
-            </Mono>
           </div>
         ))}
 
@@ -1592,16 +1698,26 @@ function OutfitRating({ profile: profileProp, wardrobe, onBack }) {
     setFollowupInput("");
     setFollowupLoading(true);
     try {
+      // The model returns BOTH a chat reply and an updated structured review,
+      // so corrections to the image read (fabric, fit, occasion, colour) flow
+      // back into the score / strengths / weaknesses / suggestions card.
       const systemPrompt =
-        "you are tenue — a fashion expert. you already reviewed the outfit in the image. previous review:\n" +
-        "- score: " + result.score + "/10\n" +
-        "- strengths: " + (result.strengths || []).join("; ") + "\n" +
-        "- weaknesses: " + (result.weaknesses || []).join("; ") + "\n" +
-        "- suggestions: " + (result.suggestions || []).join("; ") + "\n\n" +
-        "the user may now correct details (fabric, fit, occasion, colors) or ask follow-up questions. " +
-        "update your read when new information justifies it — say clearly if your take changes, and why. " +
-        "be direct, strict but fair. keep responses short, 2-4 sentences unless asked for more.\n\n" +
-        "IMPORTANT: write your entire response in lowercase only. no capital letters anywhere.";
+        "You are tenue — a personal style consultant. You already reviewed the outfit in the image. Current review state:\n" +
+        "- Score: " + result.score + "/10\n" +
+        "- Strengths: " + (result.strengths || []).join("; ") + "\n" +
+        "- Weaknesses: " + (result.weaknesses || []).join("; ") + "\n" +
+        "- Suggestions: " + (result.suggestions || []).join("; ") + "\n\n" +
+        "The user may now correct details (fabric, fit, occasion, colors) the image got wrong, or ask follow-up questions. " +
+        "When new information justifies it, update the review. Otherwise leave the review unchanged.\n\n" +
+        "RESPOND WITH VALID JSON ONLY — no prose outside the JSON, no code fences. Schema:\n" +
+        "{\n" +
+        "  \"reply\": \"your conversational reply, 2-4 sentences. Use normal sentence capitalization. Do NOT use ** around brand names. Reference brands as markdown links like [Brand](https://example.com) when you know the URL.\",\n" +
+        "  \"updated\": true | false,\n" +
+        "  \"review\": { \"score\": number 1-10, \"strengths\": [strings], \"weaknesses\": [strings], \"suggestions\": [strings] }\n" +
+        "}\n\n" +
+        "Set updated=false and copy the existing review verbatim when the user just asked a question. " +
+        "Set updated=true only when a correction or new context shifts your read — explain the shift in `reply`. " +
+        "Direct and considered, never chatty. Strict but fair. No emoji, no exclamation marks.";
       // First message includes the image; subsequent text-only
       const apiMsgs = nextMsgs.map((m, idx) => {
         if (idx === 0 && m.role === "user") {
@@ -1623,7 +1739,7 @@ function OutfitRating({ profile: profileProp, wardrobe, onBack }) {
         },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
-          max_tokens: 600,
+          max_tokens: 800,
           system: systemPrompt,
           messages: apiMsgs,
         }),
@@ -1631,14 +1747,37 @@ function OutfitRating({ profile: profileProp, wardrobe, onBack }) {
       let data;
       try { data = await res.json(); } catch (e) { throw new Error("Could not read server response"); }
       if (!res.ok) throw new Error(data?.error?.message || "Server error " + res.status);
-      const txt = (data.content?.find(b => b.type === "text")?.text || "").toLowerCase();
-      const updated = [...nextMsgs, { role: "assistant", content: txt }];
+      const txt = data.content?.find(b => b.type === "text")?.text || "";
+
+      // Try to parse as JSON; fall back to plain text if the model went freeform
+      let reply = txt;
+      let nextReview = null;
+      try {
+        const cleaned = txt.replace(/```json|```/g, "").trim();
+        const parsed = JSON.parse(cleaned);
+        if (parsed && typeof parsed.reply === "string") reply = parsed.reply;
+        if (parsed && parsed.updated && parsed.review && typeof parsed.review.score === "number") {
+          nextReview = {
+            score: parsed.review.score,
+            strengths:   Array.isArray(parsed.review.strengths)   ? parsed.review.strengths   : (result.strengths   || []),
+            weaknesses:  Array.isArray(parsed.review.weaknesses)  ? parsed.review.weaknesses  : (result.weaknesses  || []),
+            suggestions: Array.isArray(parsed.review.suggestions) ? parsed.review.suggestions : (result.suggestions || []),
+          };
+        }
+      } catch (_) { /* stick with plain text reply */ }
+
+      const updated = [...nextMsgs, { role: "assistant", content: reply }];
       setFollowupMessages(updated);
-      if (currentReviewId) {
+      if (nextReview) {
+        setResult(nextReview);
+        if (currentReviewId) {
+          updateHistoryEntry(currentReviewId, { ...nextReview, followupMessages: updated });
+        }
+      } else if (currentReviewId) {
         updateHistoryEntry(currentReviewId, { followupMessages: updated });
       }
     } catch (err) {
-      setFollowupMessages(p => [...p, { role: "assistant", content: "error: " + (err?.message || String(err)) }]);
+      setFollowupMessages(p => [...p, { role: "assistant", content: "Error: " + (err?.message || String(err)) }]);
     }
     setFollowupLoading(false);
   }
@@ -1846,30 +1985,40 @@ function OutfitRating({ profile: profileProp, wardrobe, onBack }) {
               ))}
             </div>
 
-            {/* Follow-up chat — elaborate or correct */}
+            {/* Follow-up chat — corrections re-grade the outfit */}
             <div style={{ marginTop: "1.75rem", borderTop: "1px solid #d4cfc8", paddingTop: "1.5rem" }}>
-              <Mono style={{ color: "#7a2535", display: "block", marginBottom: "0.85rem" }}>Elaborate or correct</Mono>
-
+              <Mono style={{ color: "#7a2535", display: "block", marginBottom: "0.4rem" }}>Correct or elaborate</Mono>
               {followupMessages.length === 0 && !followupLoading && (
-                <p style={{ color: "#6b6560", fontSize: "0.92rem", lineHeight: 1.7, marginBottom: "0.85rem" }}>
-                  add context — fabric, fit, occasion — and i'll update my read.
+                <p data-preserve-case="true" style={{
+                  fontFamily: "'Fraunces', 'Times New Roman', Times, serif", fontWeight: 300,
+                  color: "#6b6560", fontSize: "0.93rem", lineHeight: 1.7, marginBottom: "0.85rem",
+                }}>
+                  Photos misread fabric, fit and occasion all the time. Tell tenue what's actually going on and the score will update.
                 </p>
               )}
 
               {followupMessages.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "0.85rem" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "0.85rem" }}>
                   {followupMessages.map((m, i) => (
-                    <div key={i}
-                      {...(m.role === "user" ? { "data-preserve-case": "true" } : {})}
-                      style={{
-                        alignSelf: m.role === "user" ? "flex-end" : "flex-start",
-                        maxWidth: "90%",
-                        background: m.role === "user" ? "#1a1814" : "#fafafa",
-                        color: m.role === "user" ? "#f4f4f6" : "#1a1a1a",
-                        padding: "0.7rem 0.95rem", fontSize: "0.92rem", lineHeight: 1.6,
-                        border: m.role === "assistant" ? "1px solid #dedad4" : "none",
-                        whiteSpace: "pre-wrap", fontFamily: "'Fraunces', Georgia, serif",
-                      }}>{m.content}</div>
+                    <div key={i} style={{ display: "flex", flexDirection: "column" }}>
+                      <Mono style={{
+                        color: m.role === "user" ? "#1a1814" : "#7a2535",
+                        marginBottom: "0.3rem", fontSize: "0.5rem",
+                      }}>
+                        {m.role === "user"
+                          ? <span data-preserve-case="true">{profile.name || "you"}</span>
+                          : "tenue"}
+                      </Mono>
+                      <div data-preserve-case="true" style={{
+                        color: "#1a1814",
+                        fontSize: "0.95rem", lineHeight: 1.7,
+                        whiteSpace: "pre-wrap",
+                        fontFamily: "'Fraunces', 'Times New Roman', Times, serif",
+                        fontWeight: 300,
+                      }}>
+                        <RichText text={m.content} />
+                      </div>
+                    </div>
                   ))}
                   {followupLoading && (
                     <div style={{ display: "flex", gap: "5px", paddingLeft: "4px", alignItems: "center" }}>
@@ -1890,13 +2039,14 @@ function OutfitRating({ profile: profileProp, wardrobe, onBack }) {
                   value={followupInput}
                   onChange={e => setFollowupInput(e.target.value)}
                   onKeyDown={onFollowupKey}
-                  placeholder="e.g. 'the pants are linen, not cotton' or 'is this ok for a business casual meeting?'"
+                  placeholder="e.g. The trousers are linen, not cotton."
+                  data-preserve-case="true"
                   rows={1}
                   style={{
-                    flex: 1, border: "1px solid #dedad4", background: "#fafafa",
+                    flex: 1, border: "1px solid #e4e0da", background: "#fafafa",
                     padding: "0.55rem 0.8rem", fontSize: "0.92rem", color: "#1a1814",
-                    lineHeight: "1.5", minHeight: "40px", maxHeight: "110px", overflow: "auto",
-                    fontFamily: "'Fraunces', Georgia, serif",
+                    lineHeight: 1.5, minHeight: "40px", maxHeight: "110px", overflow: "auto",
+                    fontFamily: "'Fraunces', 'Times New Roman', Times, serif", fontWeight: 300,
                   }}
                   onInput={e => {
                     e.target.style.height = "auto";
@@ -1904,12 +2054,13 @@ function OutfitRating({ profile: profileProp, wardrobe, onBack }) {
                   }}
                 />
                 <button onClick={sendFollowup} disabled={followupLoading || !followupInput.trim()} style={{
-                  background: followupLoading || !followupInput.trim() ? "#7a2535" : "#1a1814",
+                  background: followupLoading || !followupInput.trim() ? "#9c9590" : "#1a1814",
                   color: "#f4f4f6", border: "none", padding: "0 1rem", cursor: "pointer",
-                  fontFamily: "'DM Mono', monospace", fontSize: "0.58rem",
-                  letterSpacing: "0.12em", textTransform: "lowercase",
+                  fontFamily: "'DM Mono', 'Courier New', monospace", fontSize: "0.58rem",
+                  letterSpacing: "0.18em", textTransform: "lowercase",
                   height: "40px", whiteSpace: "nowrap",
-                }}>Send</button>
+                  opacity: followupLoading || !followupInput.trim() ? 0.6 : 1,
+                }}>send</button>
               </div>
             </div>
 
@@ -2061,55 +2212,42 @@ function OutfitRating({ profile: profileProp, wardrobe, onBack }) {
 
 // ─── Wishlist ─────────────────────────────────────────────────────────────────
 
-function Wishlist({ profile, wardrobe, onBack }) {
-  const [items, setItems] = useState([]);
-  const [loaded, setLoaded] = useState(false);
+// ─── Wishlist ─────────────────────────────────────────────────────────────────
+// Each item carries its own chat thread. Default view: items only. Tap an item →
+// inline chat opens for that piece. Tap again to hide; thread persists per item.
+
+const wishItemKey = id => "tenue-wish-chat-" + id;
+
+function WishlistItem({ item, profile, wardrobe, isOpen, onOpen, onClose, onUpdate, onRemove }) {
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
-  const chatBottomRef = useRef();
+  const [hydrated, setHydrated] = useState(false);
+  const bottomRef = useRef();
 
+  // Lazy-load the per-item thread the first time the item opens
   useEffect(() => {
+    if (!isOpen || hydrated) return;
     (async () => {
-      const saved = await load("tenue-wishlist");
-      if (Array.isArray(saved)) setItems(saved);
-      const savedMsgs = await load("tenue-wishlist-chat");
-      if (Array.isArray(savedMsgs)) setMessages(savedMsgs);
-      setLoaded(true);
+      const saved = await load(wishItemKey(item.id));
+      if (Array.isArray(saved)) setMessages(saved);
+      setHydrated(true);
     })();
-  }, []);
+  }, [isOpen, hydrated, item.id]);
 
   useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, chatLoading]);
+    if (!isOpen) return;
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [messages, chatLoading, isOpen]);
 
   useEffect(() => {
-    if (!loaded) return;
-    save("tenue-wishlist-chat", messages);
-  }, [messages, loaded]);
+    if (!hydrated) return;
+    save(wishItemKey(item.id), messages);
+  }, [messages, hydrated, item.id]);
 
-  async function addItem() {
-    const newItem = { id: `wish-${Date.now()}`, name: "", brand: "", url: "", note: "" };
-    const updated = [...items, newItem];
-    setItems(updated);
-    await save("tenue-wishlist", updated);
-  }
-
-  async function updateItem(id, field, value) {
-    const updated = items.map(i => i.id === id ? { ...i, [field]: value } : i);
-    setItems(updated);
-    await save("tenue-wishlist", updated);
-  }
-
-  async function removeItem(id) {
-    const updated = items.filter(i => i.id !== id);
-    setItems(updated);
-    await save("tenue-wishlist", updated);
-  }
-
-  async function clearChat() {
+  async function clearThread() {
     setMessages([]);
-    await del("tenue-wishlist-chat");
+    await del(wishItemKey(item.id));
   }
 
   async function sendChat() {
@@ -2121,33 +2259,35 @@ function Wishlist({ profile, wardrobe, onBack }) {
     setChatInput("");
     setChatLoading(true);
     try {
-      const wishLines = items.length
-        ? items.map((it, i) => {
-            const label = [it.name, it.brand, it.note].filter(Boolean).join(" — ");
-            return `${i + 1}. ${label || "(empty)"}`;
-          }).join("\n")
-        : "(wishlist is empty)";
       const wardrobeLines = wardrobe
         ? GARMENT_CATEGORIES.flatMap(cat => {
             const its = wardrobe[cat.id] || [];
-            return its.map(it => `${cat.label}: ${[it.color, it.name, it.brand].filter(Boolean).join(", ")}`);
+            return its.map(it => cat.label + ": " + [it.color, it.name, it.brand].filter(Boolean).join(", "));
           }).join("\n") || "(no items registered)"
         : "(unknown)";
       const { anchors, expressions, colors } = profilePersona(profile || {});
+      const itemLabel = [item.name, item.brand].filter(Boolean).join(" — ") || "(unnamed wishlist item)";
       const systemPrompt =
-        "You are tenue — a personal style assistant helping the user plan future purchases. " +
-        "You know their current wishlist and existing wardrobe so you don't suggest duplicates. " +
-        "Be direct and opinionated — strict but fair. Favor European quality brands and second-hand (Vestiaire). " +
-        "Help them refine their wishes, suggest better alternatives, flag items that don't fit their aesthetic, " +
-        "and point out what's missing in their wardrobe when asked. Keep responses short and conversational, " +
-        "2-5 sentences unless asked for more.\n\n" +
+        "You are tenue — a personal style consultant for the considered wardrobe. " +
+        "European in spirit, precise in opinion, never showy. Direct and considered, never chatty. " +
+        "Quality-obsessed but not elitist. Honest about what doesn't work. Favor second-hand first; reference Vestiaire Collective and European quality brands.\n\n" +
+        "The user is considering this single wishlist item — focus your advice on it specifically.\n" +
+        "Wishlist item: " + itemLabel + "\n" +
+        (item.note ? "Note: " + item.note + "\n" : "") +
+        (item.url ? "Link: " + item.url + "\n" : "") +
+        "\n" +
         "User: " + (profile?.name || "unknown") + "\n" +
         "Anchors (identity): " + anchors + "\n" +
         "Expressions (default modal register): " + expressions + "\n" +
         "Color palette: " + colors + "\n\n" +
-        "Current wishlist:\n" + wishLines + "\n\n" +
-        "Existing wardrobe:\n" + wardrobeLines + "\n\n" +
-        "IMPORTANT: Write your entire response in lowercase only. No capital letters anywhere.";
+        "Existing wardrobe (so you don't suggest duplicates):\n" + wardrobeLines + "\n\n" +
+        "Help them decide: does this fit their core? what does it pair with? are there better versions? would second-hand work? " +
+        "Keep replies tight — 2–4 sentences unless asked for more.\n\n" +
+        "Formatting rules:\n" +
+        "- Use normal sentence capitalization. Capitalise the first letter of sentences and proper nouns.\n" +
+        "- Do NOT use markdown bold (** **) around brand names — write them plainly.\n" +
+        "- When you reference a brand or retailer with a known site, include a markdown link [Brand](https://example.com). Use the official site (e.g. https://www.vestiairecollective.com, https://www.mrporter.com, https://www.cos.com, https://www.uniqlo.com, https://www.massimodutti.com, https://www.arket.com, https://www.matchesfashion.com, https://www.farfetch.com). If you're not sure of the URL, omit the link.\n" +
+        "- No emoji, no exclamation marks.";
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: {
@@ -2164,10 +2304,10 @@ function Wishlist({ profile, wardrobe, onBack }) {
       let data;
       try { data = await res.json(); } catch (e) { throw new Error("Could not read server response"); }
       if (!res.ok) throw new Error(data?.error?.message || "Server error " + res.status);
-      const txt = (data.content?.find(b => b.type === "text")?.text || "").toLowerCase();
+      const txt = data.content?.find(b => b.type === "text")?.text || "";
       setMessages(p => [...p, { role: "assistant", content: txt }]);
     } catch (err) {
-      setMessages(p => [...p, { role: "assistant", content: "error: " + (err?.message || String(err)) }]);
+      setMessages(p => [...p, { role: "assistant", content: "Error: " + (err?.message || String(err)) }]);
     }
     setChatLoading(false);
   }
@@ -2176,129 +2316,195 @@ function Wishlist({ profile, wardrobe, onBack }) {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); }
   }
 
+  const summary = [item.name, item.brand].filter(Boolean).join(" — ") || "untitled item";
+  const hasThread = messages.length > 0 || hydrated && false; // hide marker until hydrated
+
   return (
-    <div style={{ minHeight: "100vh", background: "#f4f4f6", fontFamily: "'Fraunces', Georgia, serif" }}>
-      {/* Header */}
-      <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #7a2535", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fafafa" }}>
-        <BackBtn onClick={onBack} />
-        <span style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "1.1rem", fontWeight: "300", letterSpacing: "0.18em", textTransform: "lowercase", color: "#1a1814" }}>tenue</span>
-        <div style={{ width: "60px" }} />
-      </div>
-
-      <div style={{ maxWidth: "560px", margin: "0 auto", padding: "2rem 1.5rem" }}>
-        <Mono style={{ color: "#7a2535", display: "block", marginBottom: "0.5rem" }}>Wishlist</Mono>
-        <h1 style={{ fontSize: "2.4rem", fontWeight: "300", color: "#1a1814", marginBottom: "2rem", letterSpacing: "0.01em" }}>Items you want</h1>
-
-        {/* Items */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "1px", marginBottom: "1.25rem" }}>
-          {items.map((item, idx) => (
-            <div key={item.id} style={{ background: "#fafafa", borderBottom: "1px solid #7a2535" }}>
-              <div style={{ padding: "0.85rem 0.9rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <div style={{ display: "flex", gap: "0.75rem" }}>
-                  <input value={item.name} onChange={e => updateItem(item.id, "name", e.target.value)}
-                    placeholder="Name"
-                    style={{ flex: 2, border: "none", borderBottom: "1px solid #7a2535", background: "transparent", padding: "0.35rem 0", fontSize: "1rem", color: "#1a1814", fontFamily: "'Fraunces', Georgia, serif" }} />
-                  <input value={item.brand} onChange={e => updateItem(item.id, "brand", e.target.value)}
-                    placeholder="Brand"
-                    style={{ flex: 1, border: "none", borderBottom: "1px solid #7a2535", background: "transparent", padding: "0.35rem 0", fontSize: "1rem", color: "#1a1814", fontFamily: "'Fraunces', Georgia, serif" }} />
-                </div>
-                <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-end" }}>
-                  <input value={item.note} onChange={e => updateItem(item.id, "note", e.target.value)}
-                    placeholder="Note"
-                    style={{ flex: 1, border: "none", borderBottom: "1px solid #7a2535", background: "transparent", padding: "0.35rem 0", fontSize: "0.9rem", color: "#6b6560", fontFamily: "'Fraunces', Georgia, serif" }} />
-                  <button onClick={() => removeItem(item.id)} style={{ background: "transparent", border: "none", cursor: "pointer", fontFamily: "'DM Mono', monospace", fontSize: "0.5rem", color: "#9c9590", textTransform: "lowercase", letterSpacing: "0.1em", flexShrink: 0 }}>Delete</button>
-                </div>
-              </div>
-            </div>
-          ))}
+    <div style={{
+      borderBottom: "1px solid #e4e0da",
+      background: "transparent",
+    }}>
+      {/* Summary row — click to open chat */}
+      <button
+        onClick={() => isOpen ? onClose() : onOpen()}
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr auto",
+          alignItems: "center", gap: "0.75rem",
+          width: "100%", textAlign: "left",
+          background: "transparent", border: "none",
+          padding: "1.05rem 0", cursor: "pointer",
+          color: "#1a1814",
+        }}
+      >
+        <div style={{ minWidth: 0 }}>
+          <div data-preserve-case="true" style={{
+            fontFamily: "'Fraunces', 'Times New Roman', Times, serif",
+            fontWeight: 300, fontSize: "1.1rem", color: "#1a1814",
+            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+          }}>{summary}</div>
+          {item.note && !isOpen && (
+            <div data-preserve-case="true" style={{
+              fontFamily: "'Fraunces', 'Times New Roman', Times, serif",
+              fontWeight: 300, fontSize: "0.88rem", color: "#6b6560",
+              marginTop: "2px",
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            }}>{item.note}</div>
+          )}
         </div>
+        <span className="tenue-label" style={{
+          fontSize: "0.5rem",
+          color: isOpen ? "#7a2535" : "#9c9590",
+          letterSpacing: "0.18em",
+        }}>{isOpen ? "hide ▴" : "open ▾"}</span>
+      </button>
 
-        {loaded && (
-          <button onClick={addItem} style={{
-            border: "1px solid #7a2535", background: "transparent",
-            padding: "0.65rem 1.25rem", cursor: "pointer",
-            fontFamily: "'DM Mono', monospace", fontSize: "0.58rem",
-            letterSpacing: "0.14em", textTransform: "lowercase", color: "#7a2535",
-            transition: "all 0.15s",
-          }}
-            onMouseEnter={e => { e.currentTarget.style.background = "#7a2535"; e.currentTarget.style.color = "#fafafa"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#7a2535"; }}
-          >+ Add</button>
-        )}
+      {/* Editor + thread — only when open */}
+      {isOpen && (
+        <div style={{
+          padding: "0.4rem 0 1.4rem",
+          animation: "fadeUp 0.18s ease",
+        }}>
+          {/* Editable fields */}
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "0.6rem", marginBottom: "0.5rem" }}>
+            <input value={item.name} onChange={e => onUpdate("name", e.target.value)}
+              placeholder="Name" data-preserve-case="true"
+              style={{
+                border: "none", borderBottom: "1px solid #e4e0da",
+                background: "transparent", padding: "0.4rem 0",
+                fontSize: "1rem", color: "#1a1814",
+                fontFamily: "'Fraunces', 'Times New Roman', Times, serif", fontWeight: 300,
+              }} />
+            <input value={item.brand} onChange={e => onUpdate("brand", e.target.value)}
+              placeholder="Brand" data-preserve-case="true"
+              style={{
+                border: "none", borderBottom: "1px solid #e4e0da",
+                background: "transparent", padding: "0.4rem 0",
+                fontSize: "1rem", color: "#1a1814",
+                fontFamily: "'Fraunces', 'Times New Roman', Times, serif", fontWeight: 300,
+              }} />
+          </div>
+          <input value={item.url || ""} onChange={e => onUpdate("url", e.target.value)}
+            placeholder="https://…" data-preserve-case="true"
+            style={{
+              width: "100%",
+              border: "none", borderBottom: "1px solid #e4e0da",
+              background: "transparent", padding: "0.4rem 0", marginBottom: "0.5rem",
+              fontSize: "0.9rem", color: "#6b6560",
+              fontFamily: "'DM Mono', 'Courier New', monospace", fontWeight: 300,
+            }} />
+          <input value={item.note} onChange={e => onUpdate("note", e.target.value)}
+            placeholder="Note" data-preserve-case="true"
+            style={{
+              width: "100%",
+              border: "none", borderBottom: "1px solid #e4e0da",
+              background: "transparent", padding: "0.4rem 0", marginBottom: "0.85rem",
+              fontSize: "0.95rem", color: "#6b6560",
+              fontFamily: "'Fraunces', 'Times New Roman', Times, serif", fontWeight: 300,
+            }} />
 
-        {/* Chat with tenue about the wishlist */}
-        <div style={{ marginTop: "3rem", borderTop: "1px solid #d4cfc8", paddingTop: "1.5rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-            <Mono style={{ color: "#7a2535" }}>Ask tenue</Mono>
-            {messages.length > 0 && (
-              <button onClick={clearChat} style={{
-                background: "transparent", border: "none", cursor: "pointer",
-                fontFamily: "'DM Mono', monospace", fontSize: "0.5rem",
-                letterSpacing: "0.1em", color: "#9c9590", textTransform: "lowercase",
-              }}>Clear chat</button>
-            )}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem" }}>
+            <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+              {item.url && (
+                <a href={item.url} target="_blank" rel="noopener noreferrer"
+                   className="tenue-label"
+                   style={{ fontSize: "0.5rem", color: "#7a2535", textDecoration: "underline", textUnderlineOffset: "2px", textDecorationThickness: "0.5px" }}>
+                  view product ↗
+                </a>
+              )}
+              {messages.length > 0 && (
+                <button onClick={clearThread} style={{
+                  background: "transparent", border: "none", cursor: "pointer",
+                  fontFamily: "'DM Mono', 'Courier New', monospace", fontSize: "0.5rem",
+                  letterSpacing: "0.18em", color: "#9c9590", textTransform: "lowercase",
+                }}>clear thread</button>
+              )}
+            </div>
+            <button onClick={onRemove} style={{
+              background: "transparent", border: "none", cursor: "pointer",
+              fontFamily: "'DM Mono', 'Courier New', monospace", fontSize: "0.5rem",
+              letterSpacing: "0.18em", color: "#9c9590", textTransform: "lowercase",
+            }}>delete item</button>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem", marginBottom: "1rem" }}>
-            {messages.length === 0 && !chatLoading && (
-              <div style={{ padding: "0.25rem 0" }}>
-                <p style={{ color: "#6b6560", fontSize: "0.95rem", lineHeight: 1.7, marginBottom: "0.9rem" }}>
-                  refine your wishes, get alternatives, or ask what's missing.
-                </p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
-                  {[
-                    "what am i missing?",
-                    "any duplicates or bad fits?",
-                    "suggest a better version of item 1",
-                  ].map(q => (
-                    <button key={q} onClick={() => setChatInput(q)} style={{
-                      background: "transparent", border: "1px solid #dedad4",
-                      padding: "0.4rem 0.8rem", cursor: "pointer",
-                      fontFamily: "'Fraunces', Georgia, serif",
-                      fontSize: "0.85rem", color: "#6b6560", transition: "all 0.15s",
-                    }}
-                      onMouseEnter={e => { e.target.style.borderColor = "#1a1814"; e.target.style.color = "#1a1814"; }}
-                      onMouseLeave={e => { e.target.style.borderColor = "#dedad4"; e.target.style.color = "#6b6560"; }}
-                    >{q}</button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {messages.map((m, i) => (
-              <div key={i}
-                {...(m.role === "user" ? { "data-preserve-case": "true" } : {})}
-                style={{
-                  alignSelf: m.role === "user" ? "flex-end" : "flex-start",
-                  maxWidth: "85%",
-                  background: m.role === "user" ? "#1a1814" : "#fafafa",
-                  color: m.role === "user" ? "#f4f4f6" : "#1a1a1a",
-                  padding: "0.8rem 1rem", fontSize: "0.95rem", lineHeight: 1.65,
-                  border: m.role === "assistant" ? "1px solid #dedad4" : "none",
-                  whiteSpace: "pre-wrap", fontFamily: "'Fraunces', Georgia, serif",
-                }}>{m.content}</div>
-            ))}
-            {chatLoading && (
-              <div style={{ display: "flex", gap: "5px", paddingLeft: "4px", alignItems: "center" }}>
-                {[0, 1, 2].map(i => (
-                  <div key={i} style={{
-                    width: "5px", height: "5px", background: "#7a2535",
-                    animation: `dot 1.2s ease ${i * 0.2}s infinite`,
-                  }} />
+          {/* Thread */}
+          {messages.length === 0 && !chatLoading && (
+            <div style={{ marginBottom: "0.9rem" }}>
+              <p data-preserve-case="true" style={{
+                fontFamily: "'Fraunces', 'Times New Roman', Times, serif", fontWeight: 300,
+                color: "#6b6560", fontSize: "0.95rem", lineHeight: 1.7, marginBottom: "0.7rem",
+              }}>
+                Ask tenue whether this piece earns its place. Suggestions, second-hand, alternatives.
+              </p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+                {[
+                  "Does this fit my core?",
+                  "Find a second-hand version.",
+                  "What does this pair with?",
+                  "Is there a better alternative?",
+                ].map(q => (
+                  <button key={q} onClick={() => setChatInput(q)} data-preserve-case="true" style={{
+                    background: "transparent", border: "1px solid #d4cfc8",
+                    padding: "0.4rem 0.8rem", cursor: "pointer",
+                    fontFamily: "'Fraunces', 'Times New Roman', Times, serif",
+                    fontWeight: 300, fontSize: "0.85rem", color: "#6b6560",
+                    transition: "all 0.15s",
+                  }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = "#1a1814"; e.currentTarget.style.color = "#1a1814"; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = "#d4cfc8"; e.currentTarget.style.color = "#6b6560"; }}
+                  >{q}</button>
                 ))}
               </div>
-            )}
-            <div ref={chatBottomRef} />
-          </div>
+            </div>
+          )}
 
-          <div style={{ display: "flex", gap: "0.5rem", alignItems: "flex-end" }}>
+          {messages.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.1rem", marginBottom: "1rem" }}>
+              {messages.map((m, i) => (
+                <div key={i} style={{ display: "flex", flexDirection: "column" }}>
+                  <Mono style={{
+                    color: m.role === "user" ? "#1a1814" : "#7a2535",
+                    fontSize: "0.5rem", marginBottom: "0.3rem",
+                  }}>
+                    {m.role === "user"
+                      ? <span data-preserve-case="true">{profile?.name || "you"}</span>
+                      : "tenue"}
+                  </Mono>
+                  <div data-preserve-case="true" style={{
+                    color: "#1a1814",
+                    fontSize: "0.97rem", lineHeight: 1.7,
+                    whiteSpace: "pre-wrap",
+                    fontFamily: "'Fraunces', 'Times New Roman', Times, serif",
+                    fontWeight: 300,
+                  }}>
+                    <RichText text={m.content} />
+                  </div>
+                </div>
+              ))}
+              {chatLoading && (
+                <div style={{ display: "flex", gap: "5px", paddingLeft: "4px", alignItems: "center" }}>
+                  {[0, 1, 2].map(i => (
+                    <div key={i} style={{
+                      width: "5px", height: "5px", background: "#7a2535",
+                      animation: "dot 1.2s ease " + (i * 0.2) + "s infinite",
+                    }} />
+                  ))}
+                </div>
+              )}
+              <div ref={bottomRef} />
+            </div>
+          )}
+
+          {/* Composer */}
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "flex-end", marginTop: "0.4rem" }}>
             <textarea
               value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={onChatKey}
-              placeholder="ask tenue about your wishlist…" rows={1}
+              placeholder="Ask tenue about this piece…" rows={1} data-preserve-case="true"
               style={{
-                flex: 1, border: "1px solid #dedad4", background: "#fafafa",
+                flex: 1, border: "1px solid #e4e0da", background: "#fafafa",
                 padding: "0.6rem 0.85rem", fontSize: "0.95rem", color: "#1a1814",
-                lineHeight: "1.5", minHeight: "42px", maxHeight: "110px", overflow: "auto",
-                fontFamily: "'Fraunces', Georgia, serif",
+                lineHeight: 1.5, minHeight: "42px", maxHeight: "110px", overflow: "auto",
+                fontFamily: "'Fraunces', 'Times New Roman', Times, serif", fontWeight: 300,
               }}
               onInput={e => {
                 e.target.style.height = "auto";
@@ -2306,14 +2512,123 @@ function Wishlist({ profile, wardrobe, onBack }) {
               }}
             />
             <button onClick={sendChat} disabled={chatLoading || !chatInput.trim()} style={{
-              background: chatLoading || !chatInput.trim() ? "#7a2535" : "#1a1814",
+              background: chatLoading || !chatInput.trim() ? "#9c9590" : "#1a1814",
               color: "#f4f4f6", border: "none", padding: "0 1.1rem", cursor: "pointer",
-              fontFamily: "'DM Mono', monospace", fontSize: "0.6rem",
-              letterSpacing: "0.12em", textTransform: "lowercase",
+              fontFamily: "'DM Mono', 'Courier New', monospace", fontSize: "0.6rem",
+              letterSpacing: "0.18em", textTransform: "lowercase",
               height: "42px", whiteSpace: "nowrap", transition: "background 0.2s",
-            }}>Send</button>
+              opacity: chatLoading || !chatInput.trim() ? 0.6 : 1,
+            }}>send</button>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+function Wishlist({ profile, wardrobe, onBack }) {
+  const [items, setItems] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+  const [openId, setOpenId] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const saved = await load("tenue-wishlist");
+      if (Array.isArray(saved)) setItems(saved);
+      setLoaded(true);
+    })();
+  }, []);
+
+  async function addItem() {
+    const newItem = { id: "wish-" + Date.now(), name: "", brand: "", url: "", note: "" };
+    const updated = [...items, newItem];
+    setItems(updated);
+    setOpenId(newItem.id);
+    await save("tenue-wishlist", updated);
+  }
+
+  async function updateItem(id, field, value) {
+    const updated = items.map(i => i.id === id ? { ...i, [field]: value } : i);
+    setItems(updated);
+    await save("tenue-wishlist", updated);
+  }
+
+  async function removeItem(id) {
+    const updated = items.filter(i => i.id !== id);
+    setItems(updated);
+    await save("tenue-wishlist", updated);
+    await del(wishItemKey(id));
+    if (openId === id) setOpenId(null);
+  }
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#f4f4f6", fontFamily: "'Fraunces', 'Times New Roman', Times, serif" }}>
+      {/* Header */}
+      <div style={{
+        padding: "1.1rem 1.5rem 0", maxWidth: "640px", margin: "0 auto",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        <BackBtn onClick={onBack} />
+        <span className="tenue-mark" style={{ fontSize: "1.05rem", color: "#1a1814" }}>tenue</span>
+        <div style={{ width: "60px" }} />
+      </div>
+
+      <div style={{ maxWidth: "640px", margin: "0 auto", padding: "2.2rem 1.5rem 3rem" }}>
+        <span className="tenue-label" style={{ fontSize: "0.5rem", color: "#9c9590", display: "block", marginBottom: "0.5rem" }}>
+          02 — wishlist
+        </span>
+        <h1 className="tenue-display" data-preserve-case="true" style={{
+          fontSize: "clamp(2rem, 6.5vw, 2.8rem)", color: "#1a1814",
+          margin: "0 0 0.7rem",
+        }}>Items you want.</h1>
+        <p data-preserve-case="true" style={{
+          fontFamily: "'Fraunces', 'Times New Roman', Times, serif", fontWeight: 300,
+          color: "#6b6560", fontSize: "0.95rem", lineHeight: 1.6,
+          maxWidth: "44ch", marginBottom: "2rem",
+        }}>
+          Each piece has its own thread — open one to ask tenue whether it earns its place.
+        </p>
+
+        <hr className="tenue-rule" style={{ margin: "0 0 0.5rem" }} />
+
+        {/* Items list — closed by default; click to open chat */}
+        {items.map(item => (
+          <WishlistItem
+            key={item.id}
+            item={item}
+            profile={profile}
+            wardrobe={wardrobe}
+            isOpen={openId === item.id}
+            onOpen={() => setOpenId(item.id)}
+            onClose={() => setOpenId(null)}
+            onUpdate={(field, value) => updateItem(item.id, field, value)}
+            onRemove={() => removeItem(item.id)}
+          />
+        ))}
+
+        {items.length === 0 && loaded && (
+          <p data-preserve-case="true" style={{
+            fontFamily: "'Fraunces', 'Times New Roman', Times, serif", fontWeight: 300,
+            color: "#9c9590", fontSize: "0.95rem", lineHeight: 1.7,
+            padding: "1.5rem 0", borderBottom: "1px solid #e4e0da",
+          }}>
+            Nothing here yet. Add the first piece you're considering.
+          </p>
+        )}
+
+        {loaded && (
+          <button onClick={addItem} style={{
+            marginTop: "1.5rem",
+            border: "1px solid #1a1814", background: "transparent",
+            padding: "0.7rem 1.4rem", cursor: "pointer",
+            fontFamily: "'DM Mono', 'Courier New', monospace", fontSize: "0.58rem",
+            letterSpacing: "0.18em", textTransform: "lowercase", color: "#1a1814",
+            transition: "all 0.15s",
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#1a1814"; e.currentTarget.style.color = "#f4f4f6"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#1a1814"; }}
+          >+ add item</button>
+        )}
       </div>
     </div>
   );
@@ -2321,20 +2636,35 @@ function Wishlist({ profile, wardrobe, onBack }) {
 
 
 
-function NavRow({ label, onClick, locked }) {
+function NavRow({ label, onClick, locked, index }) {
+  const [hover, setHover] = useState(false);
   return (
     <button onClick={locked ? undefined : onClick} style={{
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      background: "transparent", border: "none", borderBottom: "1px solid #7a2535",
-      padding: "1.1rem 0", cursor: locked ? "default" : "pointer",
-      width: "100%", textAlign: "left", transition: "opacity 0.15s",
-      opacity: locked ? 0.28 : 1,
+      display: "grid", gridTemplateColumns: "2.4rem 1fr auto", alignItems: "center",
+      background: "transparent", border: "none",
+      borderBottom: "1px solid #e4e0da",
+      padding: "1.15rem 0", cursor: locked ? "default" : "pointer",
+      width: "100%", textAlign: "left", transition: "color 0.18s, opacity 0.18s",
+      opacity: locked ? 0.32 : 1,
+      color: hover && !locked ? "#7a2535" : "#1a1814",
     }}
-      onMouseEnter={e => { if (!locked) e.currentTarget.style.opacity = "0.55"; }}
-      onMouseLeave={e => { e.currentTarget.style.opacity = locked ? "0.28" : "1"; }}
+      onMouseEnter={() => { if (!locked) setHover(true); }}
+      onMouseLeave={() => setHover(false)}
     >
-      <Mono style={{ color: "#1a1814", fontSize: "0.72rem", letterSpacing: "0.12em", textTransform: "none" }}>{label}</Mono>
-      <Mono style={{ color: "#7a2535", fontSize: "0.6rem" }}>→</Mono>
+      <span className="tenue-label" style={{
+        fontSize: "0.5rem", letterSpacing: "0.18em",
+        color: "#9c9590",
+      }}>{String(index ?? 0).padStart(2, "0")}</span>
+      <span className="tenue-label" style={{
+        fontSize: "0.78rem", letterSpacing: "0.14em",
+        color: "inherit",
+      }}>{label}</span>
+      <span className="tenue-label" style={{
+        fontSize: "0.6rem", letterSpacing: "0.1em",
+        color: hover && !locked ? "#7a2535" : "#9c9590",
+        transform: hover && !locked ? "translateX(4px)" : "translateX(0)",
+        transition: "transform 0.18s, color 0.18s",
+      }}>→</span>
     </button>
   );
 }
@@ -2344,72 +2674,247 @@ function HomeScreen({ profile, wardrobe, onGoProfile, onGoWardrobe, onGoChat, on
 
   return (
     <div style={{
-      height: "100vh", background: "#f4f4f6",
+      minHeight: "100vh", background: "#f4f4f6",
       display: "flex", flexDirection: "column",
-      fontFamily: "'Fraunces', Georgia, serif",
+      fontFamily: "'Fraunces', 'Times New Roman', Times, serif",
     }}>
-      {/* Header */}
       <div style={{
-        padding: "1.75rem 1.5rem 1.25rem",
-        display: "flex", justifyContent: "space-between", alignItems: "flex-end",
-        borderBottom: "1px solid #7a2535",
+        padding: "1.1rem 1.5rem 0",
+        display: "flex", justifyContent: "space-between", alignItems: "center",
         flexShrink: 0,
       }}>
-        <div>
-          <h1 style={{
-            fontFamily: "'Fraunces', Georgia, serif",
-            fontSize: "2rem", fontWeight: "300",
-            color: "#1a1814", letterSpacing: "0.18em",
-            lineHeight: 1,
-          }}>tenue</h1>
-          {hasProfile && (
-            <p data-preserve-case="true" style={{ fontSize: "0.85rem", color: "#9c9590", marginTop: "3px" }}>{profile.name}</p>
-          )}
-        </div>
-        <div style={{ display: "flex", gap: "1rem" }}>
-          {hasProfile && (
-            <button onClick={onReset} style={{ background: "transparent", border: "none", cursor: "pointer", fontFamily: "'DM Mono', monospace", fontSize: "0.5rem", letterSpacing: "0.1em", color: "#9c9590" }}>reset</button>
-          )}
+        <span className="tenue-label" style={{ fontSize: "0.5rem", color: "#9c9590" }}>
+          tenue — v1.0
+        </span>
+        {hasProfile && (
+          <button onClick={onReset} style={{
+            background: "transparent", border: "none", cursor: "pointer",
+            fontFamily: "'DM Mono', 'Courier New', monospace",
+            fontSize: "0.5rem", letterSpacing: "0.18em",
+            color: "#9c9590", textTransform: "lowercase",
+          }}>reset</button>
+        )}
+      </div>
+
+      <div style={{
+        padding: "3.2rem 1.5rem 2.4rem",
+        maxWidth: "640px", width: "100%", margin: "0 auto",
+        flexShrink: 0,
+      }}>
+        <h1 className="tenue-mark" style={{
+          fontSize: "clamp(3.2rem, 12vw, 5rem)",
+          color: "#1a1814",
+          margin: 0,
+        }}>tenue</h1>
+
+        <hr className="tenue-rule" style={{ margin: "0.9rem 0 1.1rem" }} />
+
+        <p className="tenue-display" style={{
+          fontSize: "clamp(1.35rem, 4.6vw, 1.85rem)",
+          color: "#1a1814",
+          maxWidth: "30ch",
+        }}>your style, considered.</p>
+
+        <p style={{
+          marginTop: "0.9rem",
+          fontFamily: "'Fraunces', 'Times New Roman', Times, serif",
+          fontWeight: 300,
+          fontSize: "0.95rem",
+          lineHeight: 1.55,
+          color: "#6b6560",
+          maxWidth: "44ch",
+        }}>
+          a personal style consultant for the considered wardrobe. european in spirit. precise in opinion. never showy.
+        </p>
+
+        {hasProfile && (
+          <p data-preserve-case="true" className="tenue-label" style={{
+            marginTop: "1.6rem",
+            fontSize: "0.55rem",
+            color: "#9c9590",
+          }}>
+            consulting — {profile.name.toLowerCase()}
+          </p>
+        )}
+      </div>
+
+      <div style={{
+        padding: "0 1.5rem",
+        maxWidth: "640px", width: "100%", margin: "0 auto",
+      }}>
+        <div style={{
+          display: "flex", alignItems: "center", gap: "0.9rem",
+          paddingBottom: "0.6rem",
+          borderBottom: "1px solid #d4cfc8",
+        }}>
+          <span className="tenue-label" style={{ fontSize: "0.5rem", color: "#9c9590" }}>
+            01 — sections
+          </span>
         </div>
       </div>
 
-      {/* Nav — slightly above centre */}
-      <div style={{ flex: 1, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "4vh" }}>
-        <div style={{ width: "100%", maxWidth: "520px", padding: "0 1.5rem" }}>
-          <NavRow label="profile"        onClick={onGoProfile}  locked={false} />
-          <NavRow label="wardrobe"       onClick={onGoWardrobe} locked={false} />
-          <NavRow label="wishlist"       onClick={onGoWishlist} locked={false} />
-          <NavRow label="consultation"   onClick={onGoChat}     locked={false} />
-          <NavRow label="today's outfit" onClick={onGoOutfit}   locked={false} />
+      <div style={{
+        padding: "0.4rem 1.5rem 2rem",
+        maxWidth: "640px", width: "100%", margin: "0 auto",
+        flex: 1,
+      }}>
+        <NavRow index={1} label="profile"            onClick={onGoProfile}  locked={false} />
+        <NavRow index={2} label="wardrobe"           onClick={onGoWardrobe} locked={false} />
+        <NavRow index={3} label="wishlist"           onClick={onGoWishlist} locked={false} />
+        <NavRow index={4} label="consultation"       onClick={onGoChat}     locked={false} />
+        <NavRow index={5} label="outfit of the day"  onClick={onGoOutfit}   locked={false} />
 
-          {/* Colour palette */}
-          {profile?.colors?.length > 0 && (
-            <div style={{ display: "flex", gap: "3px", marginTop: "1.5rem", flexWrap: "wrap" }}>
+        {profile?.colors?.length > 0 && (
+          <div style={{ marginTop: "2rem" }}>
+            <p className="tenue-label" style={{
+              fontSize: "0.5rem", color: "#9c9590",
+              marginBottom: "0.6rem",
+            }}>your palette</p>
+            <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
               {profile.colors.map(n => {
                 const c = PRESET_COLORS.find(p => p.name === n);
                 return c ? (
                   <div key={n} title={n} style={{
-                    width: "13px", height: "13px", background: c.hex,
-                    border: (c.hex === "#f4f4f6" || c.hex === "#fafafa") ? "1px solid #c8c0b4" : "none",
+                    width: "14px", height: "14px", background: c.hex,
+                    border: (c.hex === "#f4f4f6" || c.hex === "#fafafa") ? "1px solid #d4cfc8" : "none",
                   }} />
                 ) : null;
               })}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
-      <p style={{ textAlign: "center", padding: "1.25rem", fontFamily: "'DM Mono', monospace", fontSize: "0.48rem", color: "#9c9590", letterSpacing: "0.2em", flexShrink: 0 }}>
-        tenue
-      </p>
+      <div style={{
+        padding: "1.4rem 1.5rem",
+        maxWidth: "640px", width: "100%", margin: "0 auto",
+        display: "flex", justifyContent: "space-between", alignItems: "flex-end",
+        gap: "1rem",
+        flexShrink: 0,
+      }}>
+        <span className="tenue-mark" style={{
+          fontSize: "1.4rem", color: "#1a1814",
+        }}>tenue</span>
+        <div style={{ textAlign: "right" }}>
+          <p className="tenue-label" style={{ fontSize: "0.48rem", color: "#9c9590", lineHeight: 1.7 }}>
+            personal style, considered.
+          </p>
+          <p className="tenue-label" style={{ fontSize: "0.48rem", color: "#9c9590", lineHeight: 1.7 }}>
+            f4f4f6 · 1a1814 · 7a2535
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
 
-// ─── Root ─────────────────────────────────────────────────────────────────────
+export default function App() {
+  const [view, setView]         = useState(null);
+  const [profile, setProfile]   = useState(null);
+  const [wardrobe, setWardrobe] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const p = await load(SK.profile);
+      const wardrobeMeta = await load(SK.wardrobe);
+      if (wardrobeMeta) {
+        const entries = await Promise.all(
+          GARMENT_CATEGORIES.map(async cat => [cat.id, await loadCategory(cat.id)])
+        );
+        setWardrobe(Object.fromEntries(entries));
+      } else {
+        setWardrobe(Object.fromEntries(GARMENT_CATEGORIES.map(c => [c.id, []])));
+      }
+      if (p) setProfile(migrateProfile(p));
+      setView("home");
+    })();
+  }, []);
+
+  async function reset() {
+    await del(SK.profile); await del(SK.wardrobe); await del(SK.chat);
+    await deleteAllCategories();
+    setProfile(null);
+    setWardrobe(Object.fromEntries(GARMENT_CATEGORIES.map(c => [c.id, []])));
+    setView("home");
+  }
+
+  if (view === null) return (
+    <div style={{ minHeight: "100vh", background: "#f4f4f6", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <style>{FONTS + css}</style>
+      <Spinner />
+    </div>
+  );
+
+  return (
+    <>
+      <style>{FONTS + css}</style>
+
+      {view === "home" && (
+        <HomeScreen
+          profile={profile}
+          wardrobe={wardrobe}
+          onGoProfile={() => setView("profile")}
+          onGoWardrobe={() => setView("wardrobe")}
+          onGoChat={() => setView("chat")}
+          onGoOutfit={() => setView("outfit")}
+          onGoWishlist={() => setView("wishlist")}
+          onReset={reset}
+        />
+      )}
+
+      {view === "profile" && (
+        <div style={{ minHeight: "100vh", background: "#f4f4f6", overflowY: "auto" }}>
+          <div style={{ maxWidth: "560px", margin: "0 auto", padding: "1.25rem 1.5rem 0" }}>
+            <BackBtn onClick={() => setView("home")} />
+          </div>
+          <ProfileStep
+            existing={profile}
+            onComplete={p => { setProfile(p); setView("home"); }}
+          />
+        </div>
+      )}
+
+      {view === "wardrobe" && (
+        <WardrobeStep
+          profile={profile}
+          existing={wardrobe}
+          onBack={() => setView("home")}
+          onComplete={w => { setWardrobe(w); setView("home"); }}
+        />
+      )}
+
+      {view === "chat" && (
+        <ChatStep
+          profile={profile}
+          wardrobe={wardrobe}
+          onBack={() => setView("home")}
+          onEditProfile={() => setView("profile")}
+          onEditWardrobe={() => setView("wardrobe")}
+          onReset={reset}
+        />
+      )}
+
+      {view === "outfit" && (
+        <OutfitRating
+          profile={profile}
+          wardrobe={wardrobe}
+          onBack={() => setView("home")}
+        />
+      )}
+
+      {view === "wishlist" && (
+        <Wishlist profile={profile} wardrobe={wardrobe} onBack={() => setView("home")} />
+      )}
+    </>
+  );
+}
+v>
+    </div>
+  );
+}
 
 export default function App() {
-  const [view, setView]         = useState(null); // null=loading, "home","profile","wardrobe","chat","outfit","wishlist"
+  const [view, setView]         = useState(null);
   const [profile, setProfile]   = useState(null);
   const [wardrobe, setWardrobe] = useState(null);
 
